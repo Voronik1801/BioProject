@@ -1,6 +1,6 @@
 import csv
 from sklearn.cross_decomposition import PLSRegression
-
+import matplotlib.pyplot as plt
 
 # Print matrix
 def PrintMatrix(matrix):
@@ -21,7 +21,7 @@ def ImportToX(matrix):
 def ImportToY(matrix):
     for i in range(1, len(matrix)):
         for j in range(len(matrix[i]) - 1, len(matrix[i])):
-            Y[i - 1] = matrix[i][j]
+            Y[i - 1] = int(matrix[i][j])
 
 
 # Open csv and save
@@ -43,6 +43,7 @@ plsNipals.fit(X, Y) #Fit model to data.
 PLSRegression() #create PLS
 predNipals = plsNipals.predict(X) #create answer PLS
 print(predNipals)
-
+plt.plot(predNipals)
+plt.show()
 #this method dont work, why? i all do like in documentation
 #plsSVD = PLSRegression(n_components=1, algorithm="svd")

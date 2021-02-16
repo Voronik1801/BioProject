@@ -1,8 +1,5 @@
 import csv
-from cmath import sqrt
-from csv import DictWriter
-
-from sklearn.cross_decomposition import PLSRegression
+from sklearn.cross_decomposition import PLSSVD
 import matplotlib.pyplot as plt
 
 
@@ -28,7 +25,7 @@ def ImportToY(matrix):
 
 
 # Open csv and save
-with open('File/table_aMD_th_0.80_00.csv', 'r') as csv_file:
+with open('File/data2.csv', 'r') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=';')
     dataForAnalys = list(csv_reader)  # рабочий и самый подходящий вариант для дальнейшего анализа
 
@@ -36,41 +33,15 @@ with open('File/table_aMD_th_0.80_00.csv', 'r') as csv_file:
 X = [0] * (len(dataForAnalys) - 1)
 for i in range(0, len(dataForAnalys) - 1):
     X[i] = [0] * (len(dataForAnalys[i]) - 1)
-Y = [0] * (len(dataForAnalys) - 1)
-
+Y = [0] * (len(dataForAnalys[1]) - 1)
 # Saving data for analysis in main structure for pls
 ImportToX(dataForAnalys)
 ImportToY(dataForAnalys)
 # print(X)
 # print(Y)
 
-for n in range(1,11):
-    plsNipals = PLSRegression(n_components=n)  # defined pls, default stand nipals
-    plsNipals.fit(X, Y)  # Fit model to data.
-    PLSRegression()  # create PLS
-    predNipals = plsNipals.predict(X)  # create answer PLS
-    err = [0] * len(Y)
-    scal = 0
-    for i in range(0, len(Y)):
-        err[i] = (predNipals[i]-Y[i])**2
-        scal += err[i]
-    print(sqrt(scal))
-    # for j in range(0, len(Y)):
-    #     print(predNipals[j])
-    # print ("-------------")
+plsSVD = PLSSVD(n_components=1)  # defined pls, default stand nipals
+plsSVD.fit(X, Y)  # Fit model to data.
+PLSSVD()  # create PLS
 
 
-
-
-    # print(sqrt(Summ))
-    # print(predNipals)
-
-#param = plsNipals.get_params(True)
-# print(param)
-#plt.subplot(predNipals,Y)
-# axs = plt.subplot(2,1)
-# n = [0] * len(Y)
-# for i in range(len(Y)):
-#     n[i]=i
-# axs[0].plot(n ,predNipals,n, Y)
-# plt.show()

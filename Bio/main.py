@@ -44,11 +44,11 @@ ImportToY(dataForAnalys)
 # print(X)
 # print(Y)
 
-for n in range(1,2):
-    plsNipals = PLSRegression(n_components=n)  # defined pls, default stand nipals
-    plsNipals.fit(X, Y)  # Fit model to data.
-    PLSRegression()  # create PLS
-    predNipals = plsNipals.predict(X)  # create answer PLS
+
+plsNipals = PLSRegression(n_components=10)  # defined pls, default stand nipals
+plsNipals.fit(X, Y)  # Fit model to data.
+#PLSRegression()  # create PLS
+predNipals = plsNipals.predict(X)  # create answer PLS
 
     # err = [0] * len(Y)
     # scal = 0

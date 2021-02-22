@@ -45,11 +45,13 @@ ImportToY(dataForAnalys)
 # print(Y)
 
 
-plsNipals = PLSRegression(n_components=10)  # defined pls, default stand nipals
+plsNipals = PLSRegression(n_components=4)  # defined pls, default stand nipals
 plsNipals.fit(X, Y)  # Fit model to data.
-#PLSRegression()  # create PLS
 predNipals = plsNipals.predict(X)  # create answer PLS
-
+R = plsNipals.score(X,Y)
+print(R)
+# for i in range (len(Y)):
+#     print(Y[i]-predNipals[i])
     # err = [0] * len(Y)
     # scal = 0
     # for i in range(0, len(Y)):
@@ -61,3 +63,7 @@ predNipals = plsNipals.predict(X)  # create answer PLS
     # print ("-------------")
     # print(sqrt(Summ))
     # print(predNipals)
+
+plt.plot(Y)
+plt.plot(predNipals)
+plt.show()

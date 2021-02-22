@@ -50,6 +50,15 @@ plsNipals.fit(X, Y)  # Fit model to data.
 predNipals = plsNipals.predict(X)  # create answer PLS
 R = plsNipals.score(X,Y)
 print(R)
+print("P for X")
+print(plsNipals.x_loadings_)# Gamma -  в нашем случае это Р для Х
+print("T for X")
+print(plsNipals._x_scores)#Xi - в нашем случае это Т при разложении Х
+print("U for Y")
+print(plsNipals._y_scores)#Omega - в нашем случае это U при разложении Y
+print("Q for Y")
+print(plsNipals.y_loadings_)# Delta - в нашем случае это Q для Y
+
 # for i in range (len(Y)):
 #     print(Y[i]-predNipals[i])
     # err = [0] * len(Y)
@@ -67,3 +76,4 @@ print(R)
 plt.plot(Y)
 plt.plot(predNipals)
 plt.show()
+

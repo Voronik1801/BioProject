@@ -49,18 +49,18 @@ plsNipals = PLSRegression(n_components=4)  # defined pls, default stand nipals
 plsNipals.fit(X, Y)  # Fit model to data.
 predNipals = plsNipals.predict(X)  # create answer PLS
 
-print(predNipals)
+#print(predNipals)
 # R = plsNipals.score(X,Y)
 # print(R)
-# print("P for X")
-# print(plsNipals.x_loadings_)# Gamma -  в нашем случае это Р для Х
+#print("P for X")
+#print(plsNipals.x_loadings_)# Gamma -  в нашем случае это Р для Х
 # print("T for X")
 # print(plsNipals._x_scores)#Xi - в нашем случае это Т при разложении Х
 # print("U for Y")
 # print(plsNipals._y_scores)#Omega - в нашем случае это U при разложении Y
 # print("Q for Y")
-print(plsNipals.y_loadings_)# значение компонент
-
+# print(plsNipals.y_loadings_)# значение компонент
+print(plsNipals.coef_)
 # for i in range (len(Y)):
 #     print(Y[i]-predNipals[i])
     # err = [0] * len(Y)

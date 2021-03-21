@@ -1,22 +1,55 @@
 import csv
-#from sklearn.cross_decomposition import PLSRegression
 import matplotlib.pyplot as plt
 from sklearn.cross_decomposition import PLSRegression
-import pandas as pd
 import numpy as np
 
-def PLS1(X, Y, components):
-    X0 = np.asarray(X)
-    Xt = X0.transpose()
 
-    y0 = np.asarray(Y)
-    weight = Xt.dot(y0)/np.linalg.norm(Xt.dot(y0))
-    Xk = X0
-    wk = weight
-    for k in range (components):
-        tk = Xk.dot(wk)
-        tk_subscript = tk.transpose().dot(tk)
-        
+class PLS1Regression:
+
+    def PLS1(self, X, Y, components):
+        Xk = X
+        y = Y
+
+        n = Xk.shape[0]
+        p = Xk.shape[1]
+        q_scalar = 1
+
+        W = np.zeros((p, components))
+        P = np.zeros((p, components))
+        q = np.zeros(components)
+
+        pk = np.zeros((1,p))
+
+        weight = X.T.dot(y)/np.linalg.norm(X.T.dot(y))
+        W[:,0]= weight
+
+        for k in range (0,components):
+            tk = Xk.dot(W[:,k])
+            tk_scalar = tk.T.dot(tk)
+            tk = tk/tk_scalar
+            pk=Xk.T.dot(tk)
+            P[:,k] = pk.T
+            q[k] = y.T.dot(tk)
+            if q[k] == 0:
+                components = k
+                break
+            if k < components-1:
+                help1 = np.zeros((1,n))
+                help1[k,:] = tk*tk_scalar
+                help2 =(help1[k]) * pk.T
+                Xk = Xk - help2.T
+                W[:,k] = Xk.transpose().dot(y)
+
+        helpPW = P.transpose().dot(W)
+        B = (W.dot(np.linalg.inv(helpPW))).dot(q)
+        B0 = q[0] - P[:,0].transpose().dot(B)
+        return B, B0
+
+    def Predict(self,components, X, Y):
+        B, B0 = self.PLS1(X, Y, components)
+        return X.dot(B) + B0
+
+
 class Utils:
 
     # Print matrix
@@ -40,55 +73,30 @@ class Utils:
             Y[i - 1] = float(matrix[i][len(matrix[i])-1])
 
 
+utils = Utils()
+regression = PLS1Regression()
 # Open csv and save
 with open('File/table_aMD_th_0.80_00.csv', 'r') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=';')
     dataForAnalys = list(csv_reader)  # рабочий и самый подходящий вариант для дальнейшего анализа
-utils = Utils()
 # Defined X and Y for next PLS methosS
-X = [0] * (len(dataForAnalys) - 1)
-for i in range(0, len(dataForAnalys) - 1):
-    X[i] = [0] * (len(dataForAnalys[i]) - 1)
-Y = [0] * (len(dataForAnalys) - 1)
+n = len(dataForAnalys)- 1
+p = len(dataForAnalys[0]) - 1
+
+X = np.zeros((n, p))
+Y = np.zeros(n)
 
 # Saving data for analysis in main structure for pls
 utils.ImportToX(dataForAnalys)
 utils.ImportToY(dataForAnalys)
-# print(X)
-# print(Y)
 
-plsNipals = PLSRegression(n_components=4)  # defined pls, default stand nipals
+plsNipals = PLSRegression(n_components=1)  # defined pls, default stand nipals
 plsNipals.fit(X, Y)  # Fit model to data.
 predNipals = plsNipals.predict(X)  # create answer PLS
 
-#print(predNipals)
-# R = plsNipals.score(X,Y)
-# print(R)
-#print("P for X")
-#print(plsNipals.x_loadings_)# Gamma -  в нашем случае это Р для Х
-# print("T for X")
-# print(plsNipals._x_scores)#Xi - в нашем случае это Т при разложении Х
-#print("U for Y")
-#print(plsNipals._y_scores)#Omega - в нашем случае это U при разложении Y
-# print("Q for Y")
-#print(plsNipals.y_loadings_)# значение компонент
-#print(plsNipals.coef_)
-# for i in range (len(Y)):
-#     print(Y[i]-predNipals[i])
-    # err = [0] * len(Y)
-    # scal = 0
-    # for i in range(0, len(Y)):
-    #     err[i] = (predNipals[i]-Y[i])**2
-    #     scal += err[i]
-    #print(sqrt(scal))
-    # for j in range(0, len(Y)):
-    #     print(predNipals[j])
-    # print ("-------------")
-    # print(sqrt(Summ))
-    # print(predNipals)
-
 #plt.plot(Y)
 #plt.plot(predNipals)
-#plt.show()
 
-PLS1(X, Y, 1)
+other = regression.Predict(1,X,Y)
+plt.plot(other)
+plt.show()

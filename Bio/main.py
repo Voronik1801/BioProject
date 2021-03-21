@@ -7,38 +7,45 @@ import numpy as np
 class PLS1Regression:
 
     def PLS1(self, X, Y, components):
+        #init X0 & y0
         Xk = X
         y = Y
 
+        # n - size of testee
+        # p - size of properties
         n = Xk.shape[0]
         p = Xk.shape[1]
-        q_scalar = 1
+        q_salar = 1
 
+        # W - help matrix of weights
+        # P, q - Load matrix
         W = np.zeros((p, components))
         P = np.zeros((p, components))
         q = np.zeros(components)
+        t = np.zeros((n, components))  # x_scores
+        p_loading = np.zeros((p, components)) # x_loading
 
-        pk = np.zeros((1,p))
-
-        weight = X.T.dot(y)/np.linalg.norm(X.T.dot(y))
-        W[:,0]= weight
+        W[:,0] = X.T.dot(y)/np.linalg.norm(X.T.dot(y))
 
         for k in range (0,components):
-            tk = Xk.dot(W[:,k])
-            tk_scalar = tk.T.dot(tk)
-            tk = tk/tk_scalar
-            pk=Xk.T.dot(tk)
-            P[:,k] = pk.T
-            q[k] = y.T.dot(tk)
+            t[:,k] = np.dot(Xk, W[:,k]) #x_scores
+            tk_scalar = np.dot(t[:,k].T, t[:,k])
+            t[:,k] = t[:,k]/tk_scalar
+
+            P[:,k] = np.dot(Xk.T, t[:,k])
+            q[k] = np.dot (y.T, t[:,k])
+
             if q[k] == 0:
                 components = k
                 break
+
             if k < components-1:
-                help1 = np.zeros((1,n))
-                help1[k,:] = tk*tk_scalar
-                help2 =(help1[k]) * pk.T
-                Xk = Xk - help2.T
-                W[:,k] = Xk.transpose().dot(y)
+                help1 = tk_scalar * t[:,k]
+                help2 = np.outer(help1, P[:,k].T)
+
+                Xk = Xk - help2
+                W[:,k+1] = Xk.transpose().dot(y)
+
 
         helpPW = P.transpose().dot(W)
         B = (W.dot(np.linalg.inv(helpPW))).dot(q)
@@ -90,13 +97,13 @@ Y = np.zeros(n)
 utils.ImportToX(dataForAnalys)
 utils.ImportToY(dataForAnalys)
 
-plsNipals = PLSRegression(n_components=1)  # defined pls, default stand nipals
+plsNipals = PLSRegression(n_components=2)  # defined pls, default stand nipals
 plsNipals.fit(X, Y)  # Fit model to data.
 predNipals = plsNipals.predict(X)  # create answer PLS
 
-#plt.plot(Y)
-#plt.plot(predNipals)
+plt.plot(Y)
+plt.plot(predNipals)
 
-other = regression.Predict(1,X,Y)
+other = regression.Predict(2, X, Y)
 plt.plot(other)
 plt.show()

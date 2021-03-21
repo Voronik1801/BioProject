@@ -2,7 +2,7 @@ import csv
 import matplotlib.pyplot as plt
 from sklearn.cross_decomposition import PLSRegression
 import numpy as np
-
+import pandas as pd
 
 class PLS1Regression:
 
@@ -50,10 +50,13 @@ class PLS1Regression:
         helpPW = P.transpose().dot(W)
         B = (W.dot(np.linalg.inv(helpPW))).dot(q)
         B0 = q[0] - P[:,0].transpose().dot(B)
+        #print(P)
         return B, B0
 
     def Predict(self,components, X, Y):
         B, B0 = self.PLS1(X, Y, components)
+        # for i in range (len(B)):
+        #     print(B[i])
         return X.dot(B) + B0
 
 
@@ -78,6 +81,28 @@ class Utils:
     def ImportToY(self, matrix):
         for i in range(1, len(matrix)):
             Y[i - 1] = float(matrix[i][len(matrix[i])-1])
+    def CratePlot (self, data1, data2, data3):
+
+        # plt.title("Title")
+        # plt.subplots.plot(data1, legend = 'data1')
+        # plt.plot(data2)
+        # plt.plot(data3)
+
+        x = np.arange(len(data1))
+        fig, ax = plt.subplots()
+        ax.set_title("Предсказания времени дожития пациентов с БАС")
+        ax.plot(x, data1, label='Исходные данные')
+        ax.plot(x, data2, label='Библиотечные предсказания')
+        ax.plot(x, data3, label='Предсказание собственной реализации')
+        ax.set_ylabel("Время дожития")
+        ax.set_xlabel("Номер пациент")
+        ax.legend()
+        ax.grid()
+
+        fig.set_figheight(5)
+        fig.set_figwidth(16)
+        plt.show()
+        plt.show()
 
 
 utils = Utils()
@@ -97,13 +122,26 @@ Y = np.zeros(n)
 utils.ImportToX(dataForAnalys)
 utils.ImportToY(dataForAnalys)
 
-plsNipals = PLSRegression(n_components=2)  # defined pls, default stand nipals
+plsNipals = PLSRegression(n_components=10)  # defined pls, default stand nipals
 plsNipals.fit(X, Y)  # Fit model to data.
 predNipals = plsNipals.predict(X)  # create answer PLS
 
-plt.plot(Y)
-plt.plot(predNipals)
+other = regression.Predict(10, X, Y)
 
-other = regression.Predict(2, X, Y)
-plt.plot(other)
-plt.show()
+utils.CratePlot(Y,predNipals,other)
+
+# for i in range (len(other)):
+#     print(other[i])
+
+#Print err
+# for k in range (1,11):
+#     other = regression.Predict(k, X, Y)
+#     for i in range (len(Y)):
+#         err = [0] * len(Y)
+#         scal = 0
+#         for j in range(0, len(Y)):
+#             err[j] = (other[j]-Y[j])**2
+#             scal+=err[j]
+#     print(np.sqrt(scal),"\t")
+
+

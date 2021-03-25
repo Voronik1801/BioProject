@@ -4,42 +4,48 @@ from sklearn.cross_decomposition import PLSRegression
 import numpy as np
 import pandas as pd
 
-class PLS1Regression:
 
-    def PLS1(self, X, Y, components):
+
+
+class PLS1Regression:
+    def __init__(self, _X, _Y, _components):
+        self.X = _X
+        self.Y = _Y
+        self.components = _components
+
+    def PLS1(self):
         #init X0 & y0
-        Xk = X
-        y = Y
+        Xk = self.X
+        y = self.Y
 
         # n - size of testee
         # p - size of properties
         n = Xk.shape[0]
         p = Xk.shape[1]
-        q_salar = 1
 
         # W - help matrix of weights
         # P, q - Load matrix
-        W = np.zeros((p, components))
-        P = np.zeros((p, components))
-        q = np.zeros(components)
-        t = np.zeros((n, components))  # x_scores
-        p_loading = np.zeros((p, components)) # x_loading
+        W = np.zeros((p, self.components))
+        P = np.zeros((p, self.components))
+        b = np.zeros(self.components)
+        t = np.zeros((n, self.components))  # x_scores
+        p_loading = np.zeros((p, self.components)) # x_loading
 
         W[:,0] = X.T.dot(y)/np.linalg.norm(X.T.dot(y))
 
-        for k in range (0,components):
+        for k in range (0,self.components):
             t[:,k] = np.dot(Xk, W[:,k]) #x_scores
             tk_scalar = np.dot(t[:,k].T, t[:,k])
             t[:,k] = t[:,k]/tk_scalar
 
             P[:,k] = np.dot(Xk.T, t[:,k])
-            q[k] = np.dot (y.T, t[:,k])
+            b[k] = np.dot (y.T, t[:,k])
 
-            if q[k] == 0:
+            if b[k] == 0:
                 components = k
                 break
 
-            if k < components-1:
+            if k < self.components-1:
                 help1 = tk_scalar * t[:,k]
                 help2 = np.outer(help1, P[:,k].T)
 
@@ -48,13 +54,13 @@ class PLS1Regression:
 
 
         helpPW = P.transpose().dot(W)
-        B = (W.dot(np.linalg.inv(helpPW))).dot(q)
-        B0 = q[0] - P[:,0].transpose().dot(B)
+        B = (W.dot(np.linalg.inv(helpPW))).dot(b)
+        B0 = b[0] - P[:,0].transpose().dot(B)
         #print(P)
         return B, B0
 
-    def Predict(self,components, X, Y):
-        B, B0 = self.PLS1(X, Y, components)
+    def Predict(self):
+        B, B0 = self.PLS1()
         # for i in range (len(B)):
         #     print(B[i])
         return X.dot(B) + B0
@@ -90,12 +96,12 @@ class Utils:
 
         x = np.arange(len(data1))
         fig, ax = plt.subplots()
-        ax.set_title("Предсказания времени дожития пациентов с БАС")
+        ax.set_title("Предсказания времени дожития пациентов с БАС, n=10")
         ax.plot(x, data1, label='Исходные данные')
-        ax.plot(x, data2, label='Библиотечные предсказания')
-        ax.plot(x, data3, label='Предсказание собственной реализации')
-        ax.set_ylabel("Время дожития")
-        ax.set_xlabel("Номер пациент")
+        ax.plot(x, data2, label='Библиотечные прогнозы')
+        ax.plot(x, data3, label='Прогнозы собственной реализации')
+        ax.set_ylabel("Время дожития, (лет)")
+        ax.set_xlabel("Номер пациента")
         ax.legend()
         ax.grid()
 
@@ -106,7 +112,6 @@ class Utils:
 
 
 utils = Utils()
-regression = PLS1Regression()
 # Open csv and save
 with open('File/table_aMD_th_0.80_00.csv', 'r') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=';')
@@ -126,8 +131,8 @@ plsNipals = PLSRegression(n_components=10)  # defined pls, default stand nipals
 plsNipals.fit(X, Y)  # Fit model to data.
 predNipals = plsNipals.predict(X)  # create answer PLS
 
-other = regression.Predict(10, X, Y)
-
+regress = PLS1Regression(X,Y, 2)
+other = regress.Predict()
 utils.CratePlot(Y,predNipals,other)
 
 # for i in range (len(other)):

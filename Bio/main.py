@@ -9,10 +9,14 @@ import pandas as pd
 
 class PLS1Regression:
     def __init__(self, _X, _Y, _components):
-        self.X = _X
-        self.Y = _Y
-        self.components = _components
-
+        #Кол-во компонени должно быть меньше количества признаков, иначе нельзя раскладывать
+        if _X.shape[1] < _components:
+            print("error")
+        else:
+            self.X = _X
+            self.Y = _Y
+            self.components = _components
+            self.B, self.B0 = self.PLS1()
     def PLS1(self):
         #init X0 & y0
         Xk = self.X
@@ -59,11 +63,11 @@ class PLS1Regression:
         #print(P)
         return B, B0
 
-    def Predict(self):
-        B, B0 = self.PLS1()
+    def Predict(self, X):
+
         # for i in range (len(B)):
         #     print(B[i])
-        return X.dot(B) + B0
+        return X.dot(self.B) + self.B0
 
 
 class Utils:
@@ -98,8 +102,8 @@ class Utils:
         fig, ax = plt.subplots()
         ax.set_title("Предсказания времени дожития пациентов с БАС, n=10")
         ax.plot(x, data1, label='Исходные данные')
-        ax.plot(x, data2, label='Библиотечные прогнозы')
-        ax.plot(x, data3, label='Прогнозы собственной реализации')
+        ax.plot(x, data2, label='Библиотечная оценка')
+        ax.plot(x, data3, label='Оценка собственной реализации')
         ax.set_ylabel("Время дожития, (лет)")
         ax.set_xlabel("Номер пациента")
         ax.legend()
@@ -130,10 +134,17 @@ utils.ImportToY(dataForAnalys)
 plsNipals = PLSRegression(n_components=10)  # defined pls, default stand nipals
 plsNipals.fit(X, Y)  # Fit model to data.
 predNipals = plsNipals.predict(X)  # create answer PLS
+X = np.array([[0., 0., 1.], [1.,0.,0.], [2.,2.,2.], [2.,5.,4.]])
+Y = np.array([0.1, 0.9, 6.2, 11.9])
 
-regress = PLS1Regression(X,Y, 2)
-other = regress.Predict()
-utils.CratePlot(Y,predNipals,other)
+Xpred = np.array([2.,5.,4.])
+#plt.plot(Y)
+regress = PLS1Regression(X,Y, 3)
+other = regress.Predict(Xpred)
+print(other)
+#plt.plot(other)
+# plt.show()
+#utils.CratePlot(Y,predNipals,other)
 
 # for i in range (len(other)):
 #     print(other[i])

@@ -4,6 +4,7 @@ from sklearn.cross_decomposition import PLSRegression
 import numpy as np
 import copy
 
+d = 1.345
 
 def CrossValidation(X, Y, comp):
     resultCV = np.zeros(X.shape[0])
@@ -27,6 +28,7 @@ def CrossValidation(X, Y, comp):
 
 
 class PLS1Regression:
+
     def __init__(self, _X, _Y, _components):
         # Кол-во компонени должно быть меньше количества признаков, иначе нельзя раскладывать
         if _X.shape[1] < _components:
@@ -37,19 +39,16 @@ class PLS1Regression:
             self.components = _components  # number of latent variable
             self.n = _X.shape[0]  # number of testing people
             self.p = _X.shape[1]  # number of properties
-            self.B, self.B0 = self.PLS1()  # regression coef and regression const
-
-    def Hiuber(self, x1):
-        # if abs(z) < c:
-        #     return 1.0/2.0 * (z**2)
-        # else:
-        #     return c * (abs(z)-1.0/2.0 * c**2)
-        return x1[0] ** 2 + x1[1] ** 2
-
+            self.B = self.PLS1Robust()  # regression coef and regression const
+    def Hiuber(selfself, x):
+        if x < d:
+            return 1.0/2.0 * x ** 2
+        else:
+            return d * (abs(x) - 1.0/2.0 * d)
     def MinimazeFunc(selfself, x):
         f = 0
         for i in range(len(x)):
-            f += x[i] ** 2
+            f += selfself.Hiuber(x[i])
         return f
 
     def ExploratorySearch(self, startX, delta):
@@ -81,9 +80,7 @@ class PLS1Regression:
                 funcValue = self.MinimazeFunc(x)
                 isStepMade, x =self.ExploratorySearch(startX, delta)
                 while (not isStepMade ):
-                    for j in range(len(delta)):
-                        delta[j] /= step
-
+                    delta /= step
                     if (abs(self.MinimazeFunc(x) - funcValue) < error):
                         return x
             return x
@@ -132,11 +129,54 @@ class PLS1Regression:
         helpPW = P.transpose().dot(W)
         B = (W.dot(np.linalg.inv(helpPW))).dot(b)
         B0 = b[0] - P[:, 0].transpose().dot(B)
-        # print(P)
         return B, B0
 
+    def PLS1Robust(self):
+        # init X0 & y0
+        Xk = self.X
+        y = self.Y
+
+        # n - size of testee
+        # p - size of properties
+        # W - help matrix of weights
+        # P, q - Load matrix
+
+        W = np.zeros((self.p, self.components))
+        P = np.zeros((self.p, self.components))
+        b = np.zeros(self.components)
+        t = np.zeros((self.n, self.components))  # x_scores
+        p_loading = np.zeros((self.p, self.components))  # x_loading
+
+        W[:, 0] = Xk.T.dot(y) / np.linalg.norm(Xk.T.dot(y))
+
+        for k in range(0, self.components):
+            t[:, k] = np.dot(Xk, W[:, k])  # x_scores
+            tk_scalar = np.dot(t[:, k].T, t[:, k])
+            t[:, k] = t[:, k] / tk_scalar
+
+            P[:, k] = np.dot(Xk.T, t[:, k])
+            b[k] = np.dot(y.T, t[:, k])
+
+            if b[k] == 0:
+                components = k
+                break
+
+            if k < self.components - 1:
+                help1 = tk_scalar * t[:, k]
+                help2 = np.outer(help1, P[:, k].T)
+
+                Xk = Xk - help2
+                W[:, k + 1] = Xk.transpose().dot(y)
+
+
+        B = np.zeros(p)
+        delta = np.zeros(len(B))
+        delta += 0.001
+        B = self.HookaJivsa(Y - X.dot(B), delta, 4, 0.000001, 100)
+        return B
+
     def Predict(self, X):
-        return X.dot(self.B) + self.B0
+        return X.dot(self.B)
 
 
 class Utils:
@@ -206,7 +246,7 @@ class Utils:
 
 utils = Utils()
 # Open csv and save
-with open('File/table_aMD_th_0.80_00.csv', 'r') as csv_file:
+with open('table_aMD_th_0.80_00.csv', 'r') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=';')
     dataForAnalys = list(csv_reader)  # рабочий и самый подходящий вариант для дальнейшего анализа
 # Defined X and Y for next PLS methosS

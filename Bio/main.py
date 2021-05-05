@@ -6,6 +6,7 @@ import copy
 
 d = 1.345
 
+
 def CrossValidation(X, Y, comp):
     resultCV = np.zeros(X.shape[0])
     for i in range(n):
@@ -29,7 +30,7 @@ def CrossValidation(X, Y, comp):
 
 class PLS1Regression:
 
-    def __init__(self, _X, _Y, _components):
+    def __init__(self, _X, _Y, _components, mode):
         # Кол-во компонени должно быть меньше количества признаков, иначе нельзя раскладывать
         if _X.shape[1] < _components:
             print("error")
@@ -39,49 +40,55 @@ class PLS1Regression:
             self.components = _components  # number of latent variable
             self.n = _X.shape[0]  # number of testing people
             self.p = _X.shape[1]  # number of properties
-            self.B = self.PLS1Robust()  # regression coef and regression const
-    def Hiuber(selfself, x):
+            if (mode == "robust"):
+                self.B, self.B0 = self.PLS1Robust()  # regression coef and regression const
+            else:
+                self.B, self.B0 = self.PLS1()  # regression coef and regression const
+
+    def Hiuber(self, x):
         if x < d:
-            return 1.0/2.0 * x ** 2
+            return 1.0 / 2.0 * x ** 2
         else:
-            return d * (abs(x) - 1.0/2.0 * d)
-    def MinimazeFunc(selfself, x):
+            return d * (abs(x) - 1.0 / 2.0 * d)
+
+    def MinimazeFunc(self, b):
         f = 0
-        for i in range(len(x)):
-            f += selfself.Hiuber(x[i])
+        Multiply = np.dot(X, b)
+        for i in range(len(Y)):
+            f += self.Hiuber(self.Y[i] - Multiply[i])
         return f
 
-    def ExploratorySearch(self, startX, delta):
-        trialStep = copy.copy(startX)
+    def ExploratorySearch(self, startB, delta):
+        trialStep = copy.copy(startB)
 
         isStepMade = 0
-        for i in range(len(startX)):
-            trialStep[i] = startX[i] + delta[i]
-            if self.MinimazeFunc(trialStep) > self.MinimazeFunc(startX):
-                trialStep[i] = startX[i] - delta[i]
-                if self.MinimazeFunc(trialStep) > self.MinimazeFunc(startX):
+        for i in range(len(startB)):
+            trialStep[i] = startB[i] + delta[i]
+            if self.MinimazeFunc(trialStep) > self.MinimazeFunc(startB):
+                trialStep[i] = startB[i] - delta[i]
+                if self.MinimazeFunc(trialStep) > self.MinimazeFunc(startB):
                     isStepMade = 0
                     # keep
                 else:
-                    startX[i] = trialStep[i]
+                    startB[i] = trialStep[i]
                     isStepMade = 1
             else:
-                startX[i] = trialStep[i]
+                startB[i] = trialStep[i]
                 isStepMade = 1
 
-        return isStepMade, startX
+        return isStepMade, startB
 
-    def HookaJivsa(self, startX, delta, step, error, maxiter):
-        if (step < 2):
+    def HookaJivsa(self, startB, delta, step, error, maxiter):
+        if step < 2:
             print("the step should be larger")
         else:
-            x = copy.copy(startX)
+            x = copy.copy(startB)
             for i in range(maxiter):
                 funcValue = self.MinimazeFunc(x)
-                isStepMade, x =self.ExploratorySearch(startX, delta)
-                while (not isStepMade ):
+                isStepMade, x = self.ExploratorySearch(startB, delta)
+                while (not isStepMade):
                     delta /= step
-                    if (abs(self.MinimazeFunc(x) - funcValue) < error):
+                    if abs(self.MinimazeFunc(x) - funcValue) < error:
                         return x
             return x
 
@@ -168,15 +175,16 @@ class PLS1Regression:
                 Xk = Xk - help2
                 W[:, k + 1] = Xk.transpose().dot(y)
 
-
         B = np.zeros(p)
         delta = np.zeros(len(B))
         delta += 0.001
-        B = self.HookaJivsa(Y - X.dot(B), delta, 4, 0.000001, 100)
-        return B
+        B = self.HookaJivsa(B, delta, 3, 0.0001, 100)
+        B0 = b[0] - P[:, 0].transpose().dot(B)
+        print(B)
+        return B, B0
 
     def Predict(self, X):
-        return X.dot(self.B)
+        return X.dot(self.B) + self.B0
 
 
 class Utils:
@@ -224,26 +232,27 @@ class Utils:
     def PrintError(self, X, Y):
         # Print err
         for k in range(1, 31):
-            # dataCV = CrossValidation(X,Y,k)
+            dataCV = CrossValidation(X, Y, k)
 
             # plsNipals = PLSRegression(n_components=k)  # defined pls, default stand nipals
             # plsNipals.fit(X, Y)  # Fit model to data.
             # predNipals = plsNipals.predict(X)  # create answer PLS
 
-            regress = PLS1Regression(X, Y, k)
-            other = regress.Predict(X)
+            # regress = PLS1Regression(X, Y, k)
+            # other = regress.Predict(X)
             err = np.zeros(n)
             scal = 0
             for j in range(0, len(Y)):
-                # err[j] = (dataCV[j]-Y[j])**2
+                err[j] = (dataCV[j] - Y[j]) ** 2
 
                 # err[j] = (predNipals[j]-Y[j])**2
 
-                err[j] = (other[j] - Y[j]) ** 2
+                # err[j] = (other[j] - Y[j]) ** 2
                 scal += err[j]
             print(np.sqrt(scal), "\t")
 
 
+c = 25
 utils = Utils()
 # Open csv and save
 with open('table_aMD_th_0.80_00.csv', 'r') as csv_file:
@@ -260,25 +269,11 @@ Y = np.zeros(n)
 utils.ImportToX(dataForAnalys)
 utils.ImportToY(dataForAnalys)
 
-# plsNipals = PLSRegression(n_components=c)  # defined pls, default stand nipals
-# plsNipals.fit(X, Y)  # Fit model to data.
-# predNipals = plsNipals.predict(X)  # create answer PLS
+plsNipals = PLSRegression(n_components=c)  # defined pls, default stand nipals
+plsNipals.fit(X, Y)  # Fit model to data.
+predNipals = plsNipals.predict(X)  # create answer PLS
 
-regress = PLS1Regression(X, Y, 1)
+regress = PLS1Regression(X, Y, c, "robust")
 other = regress.Predict(X)
 
-# dataCV = np.zeros(n)
-# dataCV = CrossValidation(X,Y,c)
-# scal = 0
-# err = np.zeros(n)
-# for j in range(0, len(Y)):
-#     err[j] = (dataCV[j] - Y[j]) ** 2
-#     #err[j] = (predNipals[j]-Y[j])**2
-#     #err[j] = (other[j]-Y[j])**2
-#     scal += err[j]
-# print(np.sqrt(scal), "\t")
-# utils.CratePlot(Y,predNipals,other)
-# utils.PrintError(X,Y)
-x1 = np.array([20.0, 100.0])
-delta = np.array([0.1, 0.1])
-print(regress.HookaJivsa(x1, delta, 2, 0.0001, 1000))
+utils.CratePlot(Y, predNipals, other)

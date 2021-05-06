@@ -12,18 +12,11 @@ def CrossValidation(X, Y, comp):
     for i in range(n):
         beginX = X
         predictX = X[i]
-        predictYtrue = Y[i]
         beginY = Y
         beginX = np.delete(beginX, [i], 0)
         beginY = np.delete(beginY, [i], 0)
-        # regression = PLSRegression(n_components=comp)
-        # regression.fit(beginX,beginY)
-        # predictYpred=regression.predict(predictX.reshape(1,-1))
-
-        regression = PLS1Regression(beginX, beginY, comp)
+        regression = PLS1Regression(beginX, beginY, comp, "robust")
         predictYpred = regression.Predict(predictX.reshape(1, -1))
-
-        # print(predictYtrue-predictYpred)
         resultCV[i] = predictYpred
     return resultCV
 
@@ -46,15 +39,15 @@ class PLS1Regression:
                 self.B, self.B0 = self.PLS1()  # regression coef and regression const
 
     def Hiuber(self, x):
-        if x < d:
+        if abs(x) < d:
             return 1.0 / 2.0 * x ** 2
         else:
             return d * (abs(x) - 1.0 / 2.0 * d)
 
     def MinimazeFunc(self, b):
         f = 0
-        Multiply = np.dot(X, b)
-        for i in range(len(Y)):
+        Multiply = np.dot(self.X, b)
+        for i in range(len(self.Y)):
             f += self.Hiuber(self.Y[i] - Multiply[i])
         return f
 
@@ -88,6 +81,7 @@ class PLS1Regression:
                 isStepMade, x = self.ExploratorySearch(startB, delta)
                 while (not isStepMade):
                     delta /= step
+                    isStepMade, x = self.ExploratorySearch(startB, delta)
                     if abs(self.MinimazeFunc(x) - funcValue) < error:
                         return x
             return x
@@ -175,12 +169,12 @@ class PLS1Regression:
                 Xk = Xk - help2
                 W[:, k + 1] = Xk.transpose().dot(y)
 
-        B = np.zeros(p)
+        helpPW = P.transpose().dot(W)
+        B = (W.dot(np.linalg.inv(helpPW))).dot(b)
         delta = np.zeros(len(B))
-        delta += 0.001
-        B = self.HookaJivsa(B, delta, 3, 0.0001, 100)
+        delta += 0.00005
+        B = self.HookaJivsa(B, delta, 2, 0.01, 50)
         B0 = b[0] - P[:, 0].transpose().dot(B)
-        print(B)
         return B, B0
 
     def Predict(self, X):
@@ -232,27 +226,27 @@ class Utils:
     def PrintError(self, X, Y):
         # Print err
         for k in range(1, 31):
-            dataCV = CrossValidation(X, Y, k)
+            #dataCV = CrossValidation(X, Y, k)
 
             # plsNipals = PLSRegression(n_components=k)  # defined pls, default stand nipals
             # plsNipals.fit(X, Y)  # Fit model to data.
             # predNipals = plsNipals.predict(X)  # create answer PLS
 
-            # regress = PLS1Regression(X, Y, k)
-            # other = regress.Predict(X)
+            regress = PLS1Regression(X, Y, k, "robust")
+            other = regress.Predict(X)
             err = np.zeros(n)
             scal = 0
             for j in range(0, len(Y)):
-                err[j] = (dataCV[j] - Y[j]) ** 2
+                #err[j] = (dataCV[j] - Y[j]) ** 2
 
-                # err[j] = (predNipals[j]-Y[j])**2
+                #err[j] = (predNipals[j]-Y[j])**2
 
-                # err[j] = (other[j] - Y[j]) ** 2
+                err[j] = (other[j] - Y[j]) ** 2
                 scal += err[j]
             print(np.sqrt(scal), "\t")
 
 
-c = 25
+c = 2
 utils = Utils()
 # Open csv and save
 with open('table_aMD_th_0.80_00.csv', 'r') as csv_file:
@@ -265,15 +259,19 @@ p = len(dataForAnalys[0]) - 1
 X = np.zeros((n, p))
 Y = np.zeros(n)
 
-# Saving data for analysis in main structure for pls
+#Saving data for analysis in main structure for pls
 utils.ImportToX(dataForAnalys)
 utils.ImportToY(dataForAnalys)
+#
+# plsNipals = PLSRegression(n_components=c)  # defined pls, default stand nipals
+# plsNipals.fit(X, Y)  # Fit model to data.
+# predNipals = plsNipals.predict(X)  # create answer PLS
 
-plsNipals = PLSRegression(n_components=c)  # defined pls, default stand nipals
-plsNipals.fit(X, Y)  # Fit model to data.
-predNipals = plsNipals.predict(X)  # create answer PLS
+# regress = PLS1Regression(X, Y, c, "c")
+# other = regress.Predict(X)
+# for i in range (len(other)):
+#     print (other[i])
 
-regress = PLS1Regression(X, Y, c, "robust")
-other = regress.Predict(X)
-
-utils.CratePlot(Y, predNipals, other)
+# utils.CratePlot(Y, predNipals, other)
+utils.PrintError(X,Y)
+#print(CrossValidation(X, Y, 2))

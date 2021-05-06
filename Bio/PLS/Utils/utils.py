@@ -1,9 +1,35 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from PLS.PLS1 import PLS1
+from PLS.PLS1.PLS1 import PLS1Regression
+from sklearn.cross_decomposition import PLSRegression
 
+def CrossValidationRobust(X, Y, comp):
+    resultCV = np.zeros(X.shape[0])
+    for i in range(X.shape[0]):
+        beginX = X
+        predictX = X[i]
+        beginY = Y
+        beginX = np.delete(beginX, [i], 0)
+        beginY = np.delete(beginY, [i], 0)
+        regression = PLS1Regression(beginX, beginY, comp, "robust")
+        predictYpred = regression.Predict(predictX.reshape(1, -1))
+        resultCV[i] = predictYpred
+    return resultCV
 
-class Utils:
+def CrossValidationClassic(X, Y, comp):
+    resultCV = np.zeros(X.shape[0])
+    for i in range(X.shape[0]):
+        beginX = X
+        predictX = X[i]
+        beginY = Y
+        beginX = np.delete(beginX, [i], 0)
+        beginY = np.delete(beginY, [i], 0)
+        regression = PLS1Regression(beginX, beginY, comp, "classic")
+        predictYpred = regression.Predict(predictX.reshape(1, -1))
+        resultCV[i] = predictYpred
+    return resultCV
+
+class Utils():
     def __init__(self, _X, _Y):
             self.X = _X  # matrix of predictors
             self.Y = _Y  # vector of real data
@@ -25,12 +51,7 @@ class Utils:
         for i in range(1, len(matrix)):
             self.Y[i - 1] = float(matrix[i][len(matrix[i]) - 1])
 
-    def CratePlot(self, data1, data2, data3):
-
-        # plt.title("Title")
-        # plt.subplots.plot(data1, legend = 'data1')
-        # plt.plot(data2)
-        # plt.plot(data3)
+    def CrateThreePlot(self, data1, data2, data3):
 
         x = np.arange(len(data1))
         fig, ax = plt.subplots()
@@ -48,25 +69,49 @@ class Utils:
         plt.show()
         plt.show()
 
-    def PrintError(self, X, Y):
+    def PrintErrorLibrary(self, X, Y):
         # Print err
         for k in range(1, 31):
-            #dataCV = CrossValidation(X, Y, k)
+            plsNipals = PLSRegression(n_components=k)  # defined pls, default stand nipals
+            plsNipals.fit(X, Y)  # Fit model to data.
+            predNipals = plsNipals.predict(X)  # create answer PLS
 
-            # plsNipals = PLSRegression(n_components=k)  # defined pls, default stand nipals
-            # plsNipals.fit(X, Y)  # Fit model to data.
-            # predNipals = plsNipals.predict(X)  # create answer PLS
-
-            regress = PLS1(X, Y, k, "robust")
-            other = regress.Predict(X)
-            err = np.zeros(182)
+            err = np.zeros(X.shape[0])
             scal = 0
             for j in range(0, len(Y)):
-                #err[j] = (dataCV[j] - Y[j]) ** 2
-
-                #err[j] = (predNipals[j]-Y[j])**2
-
-                err[j] = (other[j] - Y[j]) ** 2
+                err[j] = (predNipals[j]-Y[j])**2
                 scal += err[j]
             print(np.sqrt(scal), "\t")
 
+    def PrintErrorCVClassic(self, X, Y):
+        # Print err
+        for k in range(1, 31):
+            CV = CrossValidationClassic(X, Y, k)
+            err = np.zeros(X.shape[0])
+            scal = 0
+            for j in range(0, len(Y)):
+                err[j] = (CV[j] - Y[j]) ** 2
+                scal += err[j]
+            print(np.sqrt(scal), "\t")
+
+    def PrintErrorCVRobust(self, X, Y):
+        # Print err
+        for k in range(1, 31):
+            CV = CrossValidationRobust(X, Y, k)
+            err = np.zeros(X.shape[0])
+            scal = 0
+            for j in range(0, len(Y)):
+                err[j] = (CV[j] - Y[j]) ** 2
+                scal += err[j]
+            print(np.sqrt(scal), "\t")
+    def PrintErrorPLS1(self, X, Y):
+        # Print err
+        for k in range(1, 31):
+            regress = PLS1Regression(X, Y, k, "robust")
+            plsPredict = regress.Predict(X)
+            err = np.zeros(X.shape[0])
+            scal = 0
+            for j in range(0, len(Y)):
+                err[j] = (plsPredict[j] - Y[j]) ** 2
+                scal += err[j]
+            print(np.sqrt(scal), "\t")

@@ -2,7 +2,7 @@ import numpy as np
 import copy
 
 d = 1.345
-class PLS1Regression:
+class PLS1Regression():
 
     def __init__(self, _X, _Y, _components, mode):
         # Кол-во компонени должно быть меньше количества признаков, иначе нельзя раскладывать

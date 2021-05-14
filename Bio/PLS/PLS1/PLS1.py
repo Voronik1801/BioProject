@@ -154,8 +154,8 @@ class PLS1Regression():
         B = (W.dot(np.linalg.inv(helpPW))).dot(b)
         delta = np.zeros(len(B))
         delta += 0.00005
-        B = self.HookaJivsa(B, delta, 2, 0.01, 50)
         B0 = b[0] - P[:, 0].transpose().dot(B)
+        B = self.HookaJivsa(B, delta, 2, 0.01, 5)
         return B, B0
 
     def Predict(self, X):

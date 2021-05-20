@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from scipy.optimize import minimize
 
 d = 1.345
 class PLS1Regression():
@@ -151,11 +152,13 @@ class PLS1Regression():
                 W[:, k + 1] = Xk.transpose().dot(y)
 
         helpPW = P.transpose().dot(W)
-        B = (W.dot(np.linalg.inv(helpPW))).dot(b)
-        delta = np.zeros(len(B))
+        Bpls = (W.dot(np.linalg.inv(helpPW))).dot(b)
+        delta = np.zeros(len(Bpls))
         delta += 0.00005
-        B0 = b[0] - P[:, 0].transpose().dot(B)
-        B = self.HookaJivsa(B, delta, 2, 0.01, 5)
+        B0 = b[0] - P[:, 0].transpose().dot(Bpls)
+        #B = self.HookaJivsa(B, delta, 2, 0.01, 5)
+        resMinimization = minimize (self.MinimazeFunc, Bpls, method="nelder-mead")
+        B = resMinimization.x
         return B, B0
 
     def Predict(self, X):

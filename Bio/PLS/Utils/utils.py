@@ -3,6 +3,20 @@ import numpy as np
 from PLS.PLS1.PLS1 import PLS1Regression
 from sklearn.cross_decomposition import PLSRegression
 
+def CrossValidationLib(X, Y, comp):
+    resultCV = np.zeros(X.shape[0])
+    for i in range(X.shape[0]):
+        beginX = X
+        predictX = X[i]
+        beginY = Y
+        beginX = np.delete(beginX, [i], 0)
+        beginY = np.delete(beginY, [i], 0)
+        regression = PLSRegression(n_components=comp)  # defined pls, default stand nipals
+        regression.fit(beginX, beginY)  # Fit model to data.
+        predictYpred = regression.predict(predictX.reshape(1, -1))
+        resultCV[i] = predictYpred
+    return resultCV
+
 def CrossValidationRobust(X, Y, comp):
     resultCV = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
@@ -69,24 +83,21 @@ class Utils():
         plt.show()
         plt.show()
 
-    def PrintErrorLibrary(self, X, Y):
+    def PrintErrorCVClassic(self, X, Y):
         # Print err
-        for k in range(1, 31):
-            plsNipals = PLSRegression(n_components=k)  # defined pls, default stand nipals
-            plsNipals.fit(X, Y)  # Fit model to data.
-            predNipals = plsNipals.predict(X)  # create answer PLS
-
+        for k in range(1, 21):
+            CV = CrossValidationClassic(X, Y, k)
             err = np.zeros(X.shape[0])
             scal = 0
             for j in range(0, len(Y)):
-                err[j] = (predNipals[j]-Y[j])**2
+                err[j] = (CV[j] - Y[j]) ** 2
                 scal += err[j]
             print(np.sqrt(scal), "\t")
 
-    def PrintErrorCVClassic(self, X, Y):
+    def PrintErrorCVLib(self, X, Y):
         # Print err
-        for k in range(1, 31):
-            CV = CrossValidationClassic(X, Y, k)
+        for k in range(1, 21):
+            CV = CrossValidationLib(X, Y, k)
             err = np.zeros(X.shape[0])
             scal = 0
             for j in range(0, len(Y)):
@@ -96,7 +107,7 @@ class Utils():
 
     def PrintErrorCVRobust(self, X, Y):
         # Print err
-        for k in range(1, 31):
+        for k in range(1, 21):
             CV = CrossValidationRobust(X, Y, k)
             err = np.zeros(X.shape[0])
             scal = 0
@@ -104,9 +115,10 @@ class Utils():
                 err[j] = (CV[j] - Y[j]) ** 2
                 scal += err[j]
             print(np.sqrt(scal), "\t")
-    def PrintErrorPLS1(self, X, Y):
+
+    def PrintErrorPLS1Robust(self, X, Y):
         # Print err
-        for k in range(1, 31):
+        for k in range(1, 21):
             regress = PLS1Regression(X, Y, k, "robust")
             plsPredict = regress.Predict(X)
             err = np.zeros(X.shape[0])
@@ -114,4 +126,29 @@ class Utils():
             for j in range(0, len(Y)):
                 err[j] = (plsPredict[j] - Y[j]) ** 2
                 scal += err[j]
-            print(np.sqrt(scal), "\t")
+            print((scal), "\t")
+
+    def PrintErrorPLS1Classic(self, X, Y):
+        # Print err
+        for k in range(1, 21):
+            regress = PLS1Regression(X, Y, k, "classic")
+            plsPredict = regress.Predict(X)
+            err = np.zeros(X.shape[0])
+            scal = 0
+            for j in range(0, len(Y)):
+                err[j] = (plsPredict[j] - Y[j]) ** 2
+                scal += err[j]
+            print((scal), "\t")
+
+    def PrintErrorLib(self, X, Y):
+        # Print err
+        for k in range(1, 21):
+            plsNipals = PLSRegression(n_components=k)  # defined pls, default stand nipals
+            plsNipals.fit(X, Y)  # Fit model to data.
+            predNipals = plsNipals.predict(X)  # create answer PLS
+            err = np.zeros(X.shape[0])
+            scal = 0
+            for j in range(0, len(Y)):
+                err[j] = (predNipals[j] - Y[j]) ** 2
+                scal += err[j]
+            print((scal), "\t")

@@ -85,7 +85,7 @@ class Utils():
 
     def PrintErrorCVClassic(self, X, Y):
         # Print err
-        for k in range(1, 21):
+        for k in range(2, 11):
             CV = CrossValidationClassic(X, Y, k)
             err = np.zeros(X.shape[0])
             scal = 0
@@ -96,7 +96,7 @@ class Utils():
 
     def PrintErrorCVLib(self, X, Y):
         # Print err
-        for k in range(1, 21):
+        for k in range(2, 11):
             CV = CrossValidationLib(X, Y, k)
             err = np.zeros(X.shape[0])
             scal = 0
@@ -107,7 +107,7 @@ class Utils():
 
     def PrintErrorCVRobust(self, X, Y):
         # Print err
-        for k in range(1, 21):
+        for k in range(2, 11):
             CV = CrossValidationRobust(X, Y, k)
             err = np.zeros(X.shape[0])
             scal = 0
@@ -118,7 +118,7 @@ class Utils():
 
     def PrintErrorPLS1Robust(self, X, Y):
         # Print err
-        for k in range(1, 21):
+        for k in range(2, 11):
             regress = PLS1Regression(X, Y, k, "robust")
             plsPredict = regress.Predict(X)
             err = np.zeros(X.shape[0])
@@ -130,7 +130,7 @@ class Utils():
 
     def PrintErrorPLS1Classic(self, X, Y):
         # Print err
-        for k in range(1, 21):
+        for k in range(2, 11):
             regress = PLS1Regression(X, Y, k, "classic")
             plsPredict = regress.Predict(X)
             err = np.zeros(X.shape[0])
@@ -142,7 +142,7 @@ class Utils():
 
     def PrintErrorLib(self, X, Y):
         # Print err
-        for k in range(1, 21):
+        for k in range(2, 11):
             plsNipals = PLSRegression(n_components=k)  # defined pls, default stand nipals
             plsNipals.fit(X, Y)  # Fit model to data.
             predNipals = plsNipals.predict(X)  # create answer PLS

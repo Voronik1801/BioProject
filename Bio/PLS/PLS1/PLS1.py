@@ -1,7 +1,6 @@
 import numpy as np
 import copy
 from scipy.optimize import minimize
-
 d = 1.345
 class PLS1Regression():
 

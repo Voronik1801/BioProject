@@ -1,11 +1,10 @@
 import numpy as np
 import copy
 from scipy.optimize import minimize
-import numexpr as ne
 import time
 from PLS.Utils.nelder_mead import nelder_mead
 
-d = 1.345
+d = 3
 class PLS1Regression():
     def __init__(self, _X, _Y, _components, mode='classic'):
         # Кол-во компонени должно быть меньше количества признаков, иначе нельзя раскладывать

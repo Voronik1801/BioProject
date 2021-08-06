@@ -37,7 +37,7 @@ class Utils():
         return resultCV
 
     def CrossValidationClassic(self, comp):
-        resultCV = np.zeros(X.shape[0])
+        resultCV = np.zeros(self.X.shape[0])
         for i in range(self.X.shape[0]):
             beginX = self.X
             predictX = self.X[i]
@@ -83,84 +83,89 @@ class Utils():
         plt.show()
         plt.show()
 
-    def PrintErrorCVClassic(self, X, Y):
+    def ErrorCVClassic(self, X, Y):
         # Print err
-        for k in range(2, 11):
+        err = {}
+        for k in components:
             CV = self.CrossValidationClassic(k)
             err = np.zeros(X.shape[0])
             scal = 0
             for j in range(0, len(Y)):
                 err[j] = (CV[j] - Y[j]) ** 2
                 scal += err[j]
-            print(np.sqrt(scal), "\t")
+            # print(np.sqrt(scal)/72, "\t")
+            err[k] = np.sqrt(scal) / 72
+        return err
 
-    def PrintErrorCVLib(self, X, Y):
+    def ErrorCVLib(self, X, Y):
         # Print err
-        for k in range(2, 11):
+        err = {}
+        for k in components:
             CV = self.CrossValidationLib(k)
             err = np.zeros(X.shape[0])
             scal = 0
             for j in range(0, len(Y)):
                 err[j] = (CV[j] - Y[j]) ** 2
                 scal += err[j]
-            print(np.sqrt(scal), "\t")
+            # print(np.sqrt(scal)/72, "\t")
+            err[k] = np.sqrt(scal) / 72
+        return err
 
-    def PrintErrorCVRobust(self, X, Y):
-        # Print err
-        for k in components:
-            CV = self.CrossValidationRobust(k)
-            err = np.zeros(X.shape[0])
-            scal = 0
-            for j in range(0, len(Y)):
-                err[j] = (CV[j] - Y[j]) ** 2
-                scal += err[j]
-            print(np.sqrt(scal), "\t")
-
-
-    def PrintErrorPLS1Robust(self, X, Y):
-        # Print err
-        for k in components:
-            regress = PLS1Regression(X, Y, k)
-            # start = time.time()
-            regress.PLS1Robust()
-            # end = time.time()
-            # print("time: ", end - start)
-            plsPredict = regress.Predict(X)
-            dif = (plsPredict - Y) ** 2
-            scal = np.sum(dif)
-            print((scal), "\t")
-
-    # def PrintErrorPLS1Robust(self, X, Y):
+    # def PrintErrorCVRobust(self, X, Y):
     #     # Print err
-    #     for k in range(2, 11):
-    #         regress = PLS1Regression(X, Y, k, "robust")
-    #         plsPredict = regress.Predict(X)
+    #     for k in components:
+    #         CV = self.CrossValidationRobust(k)
     #         err = np.zeros(X.shape[0])
     #         scal = 0
     #         for j in range(0, len(Y)):
-    #             err[j] = (plsPredict[j] - Y[j]) ** 2
+    #             err[j] = (CV[j] - Y[j]) ** 2
     #             scal += err[j]
-    #         print((scal), "\t")
+    #         print(np.sqrt(scal)/72, "\t")
 
-    def PrintErrorPLS1Classic(self, X, Y):
+    def ErrorCVRobust(self, X, Y):
         # Print err
+        err = {}
+        for k in components:
+            CV = self.CrossValidationRobust(k)
+            dif = (CV - Y) ** 2
+            scal = np.sum(dif)
+            # print(np.sqrt(scal)/72, "\t")
+            err[k] = np.sqrt(scal) / 72
+        return err
+
+    def ErrorPLS1Robust(self, X, Y):
+        # Print err
+        err = {}
         for k in components:
             regress = PLS1Regression(X, Y, k)
-            start = time.time()
-            regress.PLS1()
-            end = time.time()
-            print("time: ", end - start)
+            regress.PLS1Robust()
             plsPredict = regress.Predict(X)
             dif = (plsPredict - Y) ** 2
             scal = np.sum(dif)
-            print((scal), "\t")
+            # print((scal)/72, "\t")
+            err[k] = np.sqrt(scal) / 72
+        return err
 
-    def PrintErrorLib(self, X, Y):
+    def ErrorPLS1Classic(self, X, Y):
         # Print err
+        err = {}
+        for k in components:
+            regress = PLS1Regression(X, Y, k)
+            regress.PLS1()
+            plsPredict = regress.Predict(X)
+            dif = (plsPredict - Y) ** 2
+            scal = np.sum(dif)
+            err[k] = np.sqrt(scal) / 72
+        return err
+
+    def ErrorLib(self, X, Y):
+        # Print err
+        err = {}
         for k in components:
             plsNipals = PLSRegression(n_components=k)  # defined pls, default stand nipals
             plsNipals.fit(X, Y)  # Fit model to data.
             predNipals = plsNipals.predict(X)  # create answer PLS
             dif = (predNipals - Y) ** 2
             scal = np.sum(dif)
-            print((scal), "\t")
+            err[k] = np.sqrt(scal) / 72
+        return err

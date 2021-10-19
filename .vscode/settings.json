@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "d:/Diplom/BioProject/Bio/.venv/Scripts/python",
+    "python.pythonPath": "BioProject/.venv/bin/python3",
     "python.linting.pylintEnabled": true,
     "python.linting.enabled": true
 }

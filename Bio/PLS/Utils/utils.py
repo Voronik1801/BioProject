@@ -66,13 +66,29 @@ class Utils():
         for i in range(1, len(matrix)):
             self.Y[i - 1] = float(matrix[i][len(matrix[i]) - 1])
 
-    def CrateThreePlot(self, data1, data2, data3):
+    def CreateThreePlot(self, data1, data2, data3):
         x = np.arange(len(data1))
         fig, ax = plt.subplots()
         ax.set_title("Предсказания времени дожития пациентов с БАС, n=10")
         ax.plot(x, data1, label='Исходные данные')
         ax.plot(x, data2, label='Библиотечная оценка')
         ax.plot(x, data3, label='Оценка собственной реализации')
+        ax.set_ylabel("Время дожития, (лет)")
+        ax.set_xlabel("Номер пациента")
+        ax.legend()
+        ax.grid()
+
+        fig.set_figheight(5)
+        fig.set_figwidth(16)
+        plt.show()
+        plt.show()
+
+    def CreateTwoPlot(self, data1, data2):
+        x = np.arange(len(data1))
+        fig, ax = plt.subplots()
+        ax.set_title("Предсказания времени дожития пациентов с БАС, n=10")
+        ax.plot(x, data1, label='Исходные данные')
+        ax.plot(x, data2, label='Библиотечная оценка')
         ax.set_ylabel("Время дожития, (лет)")
         ax.set_xlabel("Номер пациента")
         ax.legend()

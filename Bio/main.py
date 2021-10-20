@@ -2,7 +2,7 @@ import csv
 from networkx.algorithms.shortest_paths import weighted
 from networkx.generators.trees import prefix_tree
 import numpy as np
-from PLS.Utils.utils import Utils
+from PLS.Utils.utils import Utils as ls_ut
 import random
 from PLS.PLS1.PLS1 import PLS1Regression
 from sklearn.cross_decomposition import PLSRegression
@@ -12,6 +12,7 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 from networkx.drawing.nx_pydot import write_dot
+from numpy import linalg as LA
 
 components = [4, 6, 7, 10]
 
@@ -73,7 +74,6 @@ def calulate_property(G):
     # print(nx.transitivity(G))
     print(nx.density(G))
     print(G.edges())    
-
 
 
 class GraphStructure():
@@ -149,28 +149,86 @@ class GraphStructure():
         property.append(nx.degree_assortativity_coefficient(G)) 
         property.append(nx.algorithms.centrality.estrada_index(G)) 
         property.append(nx.algorithms.approximation.clique.large_clique_size(G)) 
-        property.append(0)
         return property
 
-    def create_x_matrix(self):
+    def create_x_matrix_atom(self):
         X = np.zeros((len(self.weights), 11))
         for i in range(X.shape[0]):
             prop = self.calculate_prop(self.Graph_atom[i])
             X[i] = prop
         return X
+    
+    def create_x_matrix_full(self):
+        X = np.zeros((len(self.weights), 11))
+        for i in range(X.shape[0]):
+            prop = self.calculate_prop(self.Graphs_full[i])
+            X[i] = prop
+        return X
+
+    def create_x_matrix_ost(self):
+        X = np.zeros((len(self.weights), 11))
+        for i in range(X.shape[0]):
+            prop = self.calculate_prop(self.Graph_ost[i])
+            X[i] = prop
+        return X
+
+    def create_x_matrix_ost_atom(self):
+        X = np.zeros((len(self.weights), 11))
+        for i in range(X.shape[0]):
+            prop = self.calculate_prop(self.Graph_ost_atom[i])
+            X[i] = prop
+        return X
+
+    def full_graph_calc(self):
+        self.creat_full_value_graph()
+        X = self.create_x_matrix_full()
+        Y = self.surv_time
+        return X, Y
+
+    def atom_graph_calc(self):
+        self.creat_atom_value_graph()
+        X = self.create_x_matrix_atom()
+        Y = self.surv_time
+        return X, Y
+    
+    def ost_graph_calc(self):
+        self.creat_ost_value_graph()
+        X = self.create_x_matrix_ost()
+        Y = self.surv_time
+        return X, Y
+
+    def ost_atom_graph_calc(self):
+        self.creat_ost_atom_value_graph()
+        X = self.create_x_matrix_ost_atom()
+        Y = self.surv_time
+        return X, Y
+
+class LeastSquareMethod():
+    def __init__(self, X, Y):
+        self.X = X
+        self.Y = Y
+        self.teta = np.zeros(len(Y))
+        self.y_oz = None
+
+    def calc_teta(self):
+        teta = (np.dot(self.X.transpose(), self.X))
+        teta = LA.inv(teta)
+        teta = np.dot(teta, self.X.transpose())
+        self.teta = np.dot(teta, self.Y)
+
+    def calc_y_oz(self):
+        self.y_oz = np.dot(self.X, self.teta)
+    
 
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
-    # structure.creat_full_value_graph()
-    # for i in range (len(structure.Graphs_full)):
-    #     structure.calculate_prop(structure.Graphs_full[i])
-    structure.creat_atom_value_graph()
-    structure.create_x_matrix()
-    # for i in range (len(structure.Graph_atom)):
-    #     structure.calculate_prop(structure.Graph_atom[i])
-    # structure.creat_ost_value_graph()
-    # structure.creat_ost_atom_value_graph()
-    
+    X, Y = structure.ost_atom_graph_calc()
+    lsm = LeastSquareMethod(X, Y)
+    lsm.calc_teta()
+    lsm.calc_y_oz()
+    y_oz = lsm.y_oz
+    ut = ls_ut(X, Y)
+    ut.CreateTwoPlot(Y, y_oz)
 
 main_graph()

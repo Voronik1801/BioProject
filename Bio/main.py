@@ -4,15 +4,16 @@ from networkx.generators.trees import prefix_tree
 import numpy as np
 from PLS.Utils.utils import Utils as ls_ut
 import random
-from PLS.PLS1.PLS1 import PLS1Regression
-from sklearn.cross_decomposition import PLSRegression
-from concurrent.futures import ThreadPoolExecutor
 import copy
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
-from networkx.drawing.nx_pydot import write_dot
 from numpy import linalg as LA
+from sklearn.metrics import r2_score
+from sklearn.linear_model import LinearRegression
+from scipy import stats
+import statsmodels.api as sm
+
 
 components = [4, 6, 7, 10]
 
@@ -84,6 +85,7 @@ class GraphStructure():
         self.Graph_ost = []
         self.Graph_ost_atom = []
         self.surv_time = []
+        self.prop_kol = 11
     
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
@@ -152,28 +154,28 @@ class GraphStructure():
         return property
 
     def create_x_matrix_atom(self):
-        X = np.zeros((len(self.weights), 11))
+        X = np.zeros((len(self.weights), self.prop_kol))
         for i in range(X.shape[0]):
             prop = self.calculate_prop(self.Graph_atom[i])
             X[i] = prop
         return X
     
     def create_x_matrix_full(self):
-        X = np.zeros((len(self.weights), 11))
+        X = np.zeros((len(self.weights), self.prop_kol))
         for i in range(X.shape[0]):
             prop = self.calculate_prop(self.Graphs_full[i])
             X[i] = prop
         return X
 
     def create_x_matrix_ost(self):
-        X = np.zeros((len(self.weights), 11))
+        X = np.zeros((len(self.weights), self.prop_kol))
         for i in range(X.shape[0]):
             prop = self.calculate_prop(self.Graph_ost[i])
             X[i] = prop
         return X
 
     def create_x_matrix_ost_atom(self):
-        X = np.zeros((len(self.weights), 11))
+        X = np.zeros((len(self.weights), self.prop_kol))
         for i in range(X.shape[0]):
             prop = self.calculate_prop(self.Graph_ost_atom[i])
             X[i] = prop
@@ -214,21 +216,72 @@ class LeastSquareMethod():
         teta = (np.dot(self.X.transpose(), self.X))
         teta = LA.inv(teta)
         teta = np.dot(teta, self.X.transpose())
+        # return teta
         self.teta = np.dot(teta, self.Y)
 
     def calc_y_oz(self):
         self.y_oz = np.dot(self.X, self.teta)
+        # e = self.y_oz - self.Y
+        # self.y_oz += e 
+
+    def predict(self, X):
+        self.calc_teta()
+        y_oz = np.dot(X, self.teta)
+        return y_oz
+    
+
+
+def cross_validation(X, Y):
+    resultCV = []
+    for i in range(X.shape[0]):
+        beginX = X
+        predictX = X[i]
+        beginY = Y
+        beginX = np.delete(beginX, [i], 0)
+        beginY = np.delete(beginY, [i], 0)
+        lm = LinearRegression()
+        lm.fit(beginX, beginY)
+        params = np.append(lm.intercept_,lm.coef_)
+        predictYpred = lm.predict(predictX.reshape(1, -1))
+        # regression = LeastSquareMethod(beginX, beginY)  # defined pls, default stand nipals
+        # predictYpred = regression.predict(predictX.reshape(1, -1))
+        resultCV.append(float(predictYpred))
+    return resultCV
+
+def error(Y ,y_oz):
+    dif = 0
+    for i in range(len(y_oz)):
+        dif += (y_oz[i] - Y[i]) ** 2
+    err = np.sqrt(dif) / 72
+    return err
     
 
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
-    X, Y = structure.ost_atom_graph_calc()
-    lsm = LeastSquareMethod(X, Y)
-    lsm.calc_teta()
-    lsm.calc_y_oz()
-    y_oz = lsm.y_oz
+    # X, Y = structure.ost_atom_graph_calc()
+    X, Y = structure.atom_graph_calc()
+    # X, Y = structure.full_graph_calc()
+    # X, Y = structure.ost_graph_calc()
+    # lsm = LeastSquareMethod(X, Y)
+    # lsm.calc_teta()
+    # lsm.calc_y_oz()
+    # y_oz = lsm.y_oz
     ut = ls_ut(X, Y)
+    
+    # lm = LinearRegression()
+    # lm.fit(X, Y)
+    # params = np.append(lm.intercept_,lm.coef_)
+    # y_oz = lm.predict(X)
+    # err = error(Y, y_oz)
+
+    # cv = cross_validation(X, Y)
+    # err_cv = error(Y, cv)
+
+    est = sm.OLS(Y, X).fit()
+    y_oz = est.predict(X)
+    print(est.summary())
+
     ut.CreateTwoPlot(Y, y_oz)
 
 main_graph()

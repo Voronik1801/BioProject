@@ -86,9 +86,9 @@ class Utils():
     def CreateTwoPlot(self, data1, data2):
         x = np.arange(len(data1))
         fig, ax = plt.subplots()
-        ax.set_title("Предсказания времени дожития пациентов с БАС, n=10")
+        ax.set_title("Предсказания времени дожития пациентов с БАС")
         ax.plot(x, data1, label='Исходные данные')
-        ax.plot(x, data2, label='Библиотечная оценка')
+        ax.plot(x, data2, label='Оценка')
         ax.set_ylabel("Время дожития, (лет)")
         ax.set_xlabel("Номер пациента")
         ax.legend()

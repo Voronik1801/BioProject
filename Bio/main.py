@@ -85,7 +85,7 @@ class GraphStructure():
         self.Graph_ost = []
         self.Graph_ost_atom = []
         self.surv_time = []
-        self.prop_kol = 9
+        self.prop_kol = 11
     
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
@@ -143,8 +143,8 @@ class GraphStructure():
         property.append(G.number_of_nodes()) 
         property.append(G.number_of_edges()) 
         property.append(nx.density(G)) 
-        # property.append(nx.radius(G)) 
-        # property.append(nx.diameter(G)) 
+        property.append(nx.radius(G)) 
+        property.append(nx.diameter(G)) 
         property.append(nx.transitivity(G)) 
         property.append(nx.average_clustering(G)) 
         property.append(nx.edge_connectivity(G)) 
@@ -260,14 +260,20 @@ def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
     # X, Y = structure.ost_atom_graph_calc()
-    # X, Y = structure.atom_graph_calc()
+    X, Y = structure.atom_graph_calc()
     # X, Y = structure.full_graph_calc()
-    X, Y = structure.ost_graph_calc()
+    # X, Y = structure.ost_graph_calc()
     ut = ls_ut(X, Y)
     est = sm.OLS(Y, X).fit()
     y_oz = est.predict(X)
     print(est.summary())
-
-    ut.CreateTwoPlot(Y, y_oz)
+    f = open('result_graph_X.txt', 'w')
+    # for i in range(len(X)):
+    #     for j in range(len(X[0])):
+    #         f.write(str(X[i][j]) + '\t')
+    #     f.write('\n')
+    for i in range(len(y_oz)):
+        f.write(str(y_oz[i]) + '\n')
+    # ut.CreateTwoPlot(Y, y_oz)
 
 main_graph()

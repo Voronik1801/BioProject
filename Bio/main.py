@@ -17,14 +17,6 @@ import statsmodels.api as sm
 
 components = [4, 6, 7, 10]
 
-def calc_value(err):
-    checkY = copy.copy(Y)
-    val = random_value()
-    checkY[val] = 100
-    ret = Utils.ErrorCVRobust(X, Y)
-    for k in components:
-        err[k] += ret[k]
-
 def random_value():
     value = random.randint(0, 71)
     return value
@@ -85,7 +77,6 @@ class GraphStructure():
         self.Graph_ost = []
         self.Graph_ost_atom = []
         self.surv_time = []
-        self.prop_kol = 11
     
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
@@ -138,47 +129,53 @@ class GraphStructure():
             self.Graph_ost_atom.append(self.load_values_in_graph(self.donor_ost_atom, self.akceptor_ost_atom, self.weights[i]))
         # draw_graph(self.Graph_ost_atom[70])
     
+    # def calculate_prop(self, G):
+    #     property = []
+    #     property.append(G.number_of_nodes()) 
+    #     property.append(G.number_of_edges()) 
+    #     property.append(nx.density(G)) 
+    #     # property.append(nx.radius(G)) 
+    #     # property.append(nx.diameter(G)) 
+    #     property.append(nx.transitivity(G)) 
+    #     property.append(nx.average_clustering(G)) 
+    #     property.append(nx.edge_connectivity(G)) 
+    #     property.append(nx.degree_assortativity_coefficient(G)) 
+    #     property.append(nx.algorithms.centrality.estrada_index(G)) 
+    #     property.append(nx.algorithms.approximation.clique.large_clique_size(G)) 
+    #     return property
+
     def calculate_prop(self, G):
         property = []
-        property.append(G.number_of_nodes()) 
-        property.append(G.number_of_edges()) 
-        property.append(nx.density(G)) 
-        property.append(nx.radius(G)) 
-        property.append(nx.diameter(G)) 
-        property.append(nx.transitivity(G)) 
-        property.append(nx.average_clustering(G)) 
-        property.append(nx.edge_connectivity(G)) 
-        property.append(nx.degree_assortativity_coefficient(G)) 
-        property.append(nx.algorithms.centrality.estrada_index(G)) 
-        property.append(nx.algorithms.approximation.clique.large_clique_size(G)) 
+        for n in G.nodes:
+            property.append(nx.degree(G, n))
         return property
 
     def create_x_matrix_atom(self):
-        X = np.zeros((len(self.weights), self.prop_kol))
-        for i in range(X.shape[0]):
+        X = []
+        for i in range(len(self.weights)):
             prop = self.calculate_prop(self.Graph_atom[i])
-            X[i] = prop
+            X.append(prop)
         return X
     
     def create_x_matrix_full(self):
-        X = np.zeros((len(self.weights), self.prop_kol))
-        for i in range(X.shape[0]):
+        X = []
+        for i in range(len(self.weights)):
             prop = self.calculate_prop(self.Graphs_full[i])
-            X[i] = prop
+            X.append(prop)
         return X
 
     def create_x_matrix_ost(self):
-        X = np.zeros((len(self.weights), self.prop_kol))
-        for i in range(X.shape[0]):
+        X = []
+        for i in range(len(self.weights)):
             prop = self.calculate_prop(self.Graph_ost[i])
-            X[i] = prop
+            X.append(prop)
         return X
 
     def create_x_matrix_ost_atom(self):
-        X = np.zeros((len(self.weights), self.prop_kol))
-        for i in range(X.shape[0]):
+        X = []
+        for i in range(len(self.weights)):
             prop = self.calculate_prop(self.Graph_ost_atom[i])
-            X[i] = prop
+            X.append(prop)
         return X
 
     def full_graph_calc(self):
@@ -259,21 +256,30 @@ def error(Y ,y_oz):
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
-    # X, Y = structure.ost_atom_graph_calc()
-    X, Y = structure.atom_graph_calc()
-    # X, Y = structure.full_graph_calc()
-    # X, Y = structure.ost_graph_calc()
+    # X, Y = structure.full_graph_calc() #1
+    # X, Y = structure.ost_graph_calc() #2
+
+    X, Y = structure.atom_graph_calc() #3
+    # X, Y = structure.ost_atom_graph_calc() #4
+    
+    # draw_graph(structure.Graphs_full[0])
+    # draw_graph(structure.Graph_ost[0])
+
+    # draw_graph(structure.Graph_atom[0])
+    # draw_graph(structure.Graph_ost_atom[0])
+    X = np.array(X, dtype=object)
+    X = np.array(X, dtype=float)
     ut = ls_ut(X, Y)
     est = sm.OLS(Y, X).fit()
     y_oz = est.predict(X)
-    print(est.summary())
-    f = open('result_graph_X.txt', 'w')
+    # print(est.summary())
+    # f = open('result_graph_X.txt', 'w')
     # for i in range(len(X)):
     #     for j in range(len(X[0])):
     #         f.write(str(X[i][j]) + '\t')
     #     f.write('\n')
-    for i in range(len(y_oz)):
-        f.write(str(y_oz[i]) + '\n')
-    # ut.CreateTwoPlot(Y, y_oz)
+    # for i in range(len(y_oz)):
+    #     f.write(str(y_oz[i]) + '\n')
+    ut.CreateTwoPlot(Y, y_oz)
 
 main_graph()

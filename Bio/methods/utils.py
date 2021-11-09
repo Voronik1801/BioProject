@@ -5,7 +5,7 @@ import time
 from .PLS1 import PLS1Regression
 import math
 
-components = [10, 20, 30]
+components = [5, 7, 10, 12, 25, 30]
 
 def CrossValidationLib(X, Y, comp):
     resultCV = np.zeros(X.shape[0])

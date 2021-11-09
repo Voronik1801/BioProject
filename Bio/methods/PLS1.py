@@ -2,7 +2,7 @@ import numpy as np
 import copy
 from scipy.optimize import minimize
 import time
-from PLS.Utils.nelder_mead import nelder_mead
+from .nelder_mead import nelder_mead
 
 d = 3
 class PLS1Regression():

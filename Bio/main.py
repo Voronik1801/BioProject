@@ -1,8 +1,9 @@
 import csv
 from networkx.algorithms.shortest_paths import weighted
+from networkx.classes.function import degree
 from networkx.generators.trees import prefix_tree
 import numpy as np
-from PLS.Utils.utils import Utils as ls_ut
+from methods.utils import Utils as ls_ut
 import random
 import copy
 import pandas as pd
@@ -13,6 +14,8 @@ from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
 from scipy import stats
 import statsmodels.api as sm
+from sklearn.cross_decomposition import PLSRegression
+from methods.PLS1 import PLS1Regression
 
 
 components = [4, 6, 7, 10]
@@ -77,6 +80,7 @@ class GraphStructure():
         self.Graph_ost = []
         self.Graph_ost_atom = []
         self.surv_time = []
+        self.property_kol = 625
     
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
@@ -145,23 +149,29 @@ class GraphStructure():
     #     return property
 
     def calculate_prop(self, G):
-        property = []
+        property = []   
+        X = []
+        v = nx.communicability_exp(G)
         for n in G.nodes:
-            property.append(nx.degree(G, n))
+            # property.append(nx.degree(G, n))
+            for k in v[n]:
+                property.append(v[n][k])
         return property
 
     def create_x_matrix_atom(self):
-        X = []
+        X = np.zeros((len(self.weights), self.property_kol))
         for i in range(len(self.weights)):
             prop = self.calculate_prop(self.Graph_atom[i])
-            X.append(prop)
+            for j in range(len(prop)):
+                X[i][j] = prop[j]
         return X
     
     def create_x_matrix_full(self):
-        X = []
+        X = np.zeros((len(self.weights), self.property_kol))
         for i in range(len(self.weights)):
             prop = self.calculate_prop(self.Graphs_full[i])
-            X.append(prop)
+            for j in range(len(prop)):
+                X[i][j] = prop[j]
         return X
 
     def create_x_matrix_ost(self):
@@ -180,26 +190,26 @@ class GraphStructure():
 
     def full_graph_calc(self):
         self.creat_full_value_graph()
-        X = self.create_x_matrix_full()
-        Y = self.surv_time
+        X = np.array(self.create_x_matrix_full())
+        Y = np.array(self.surv_time)
         return X, Y
 
     def atom_graph_calc(self):
         self.creat_atom_value_graph()
-        X = self.create_x_matrix_atom()
-        Y = self.surv_time
+        X = np.array(self.create_x_matrix_atom())
+        Y = np.array(self.surv_time)
         return X, Y
     
     def ost_graph_calc(self):
         self.creat_ost_value_graph()
-        X = self.create_x_matrix_ost()
-        Y = self.surv_time
+        X = np.array(self.create_x_matrix_ost())
+        Y = np.array(self.surv_time)
         return X, Y
 
     def ost_atom_graph_calc(self):
         self.creat_ost_atom_value_graph()
-        X = self.create_x_matrix_ost_atom()
-        Y = self.surv_time
+        X = np.array(self.create_x_matrix_ost_atom())
+        Y = np.array(self.surv_time)
         return X, Y
 
 class LeastSquareMethod():
@@ -267,11 +277,9 @@ def main_graph():
 
     # draw_graph(structure.Graph_atom[0])
     # draw_graph(structure.Graph_ost_atom[0])
-    X = np.array(X, dtype=object)
-    X = np.array(X, dtype=float)
     ut = ls_ut(X, Y)
-    est = sm.OLS(Y, X).fit()
-    y_oz = est.predict(X)
+    # est = sm.OLS(Y, X).fit()
+    # y_oz = est.predict(X)
     # print(est.summary())
     # f = open('result_graph_X.txt', 'w')
     # for i in range(len(X)):
@@ -279,7 +287,18 @@ def main_graph():
     #         f.write(str(X[i][j]) + '\t')
     #     f.write('\n')
     # for i in range(len(y_oz)):
-    #     f.write(str(y_oz[i]) + '\n')
-    ut.CreateTwoPlot(Y, y_oz)
+        # f.write(str(y_oz[i]) + '\n')
+    # regression = PLSRegression(n_components=25)  # defined pls, default stand nipals
+    # regression.fit(X, Y)  # Fit model to data.
+    # y_oz = regression.predict(X)
+    # print(regression.score(X, Y))
+    # regress = PLS1Regression(X, Y, 25)
+    # y_oz_pls1 = regress.Predict(X)
+    # ut.CreateThreePlot(Y, y_oz, y_oz_pls1)
+    # print(ut.ErrorPLS1Classic(X, Y))
+    f = open('error_cv_10.txt', 'w')
+    e = ut.ErrorCVClassic(X, Y)
+    for i in range(len(e)):
+        f.write(str(e[i]) + '\n')
 
 main_graph()

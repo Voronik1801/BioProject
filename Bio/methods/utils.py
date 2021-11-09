@@ -1,9 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from PLS.PLS1.PLS1 import PLS1Regression
 from sklearn.cross_decomposition import PLSRegression
 import time
-components = [4, 6, 7, 10]
+from .PLS1 import PLS1Regression
+import math
+
+components = [10, 20, 30]
 
 def CrossValidationLib(X, Y, comp):
     resultCV = np.zeros(X.shape[0])
@@ -101,7 +103,7 @@ class Utils():
 
     def ErrorCVClassic(self, X, Y):
         # Print err
-        err = {}
+        er = {}
         for k in components:
             CV = self.CrossValidationClassic(k)
             err = np.zeros(X.shape[0])
@@ -110,8 +112,8 @@ class Utils():
                 err[j] = (CV[j] - Y[j]) ** 2
                 scal += err[j]
             # print(np.sqrt(scal)/72, "\t")
-            err[k] = np.sqrt(scal) / 72
-        return err
+            er[k] = np.sqrt(scal) / 72
+        return er
 
     def ErrorCVLib(self, X, Y):
         # Print err
@@ -167,7 +169,6 @@ class Utils():
         err = {}
         for k in components:
             regress = PLS1Regression(X, Y, k)
-            regress.PLS1()
             plsPredict = regress.Predict(X)
             dif = (plsPredict - Y) ** 2
             scal = np.sum(dif)

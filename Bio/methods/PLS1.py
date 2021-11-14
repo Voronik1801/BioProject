@@ -116,6 +116,11 @@ class PLS1Regression():
                 W[:, k + 1] = np.dot(Xk.T, y)
 
         helpPW = np.dot(P.T, W)
+        # f = open('result_graph_P.txt', 'w')
+        # for i in range(len(P)):
+        #     for j in range(len(P[0])):
+        #         f.write(str(P[i][j]) + '\t')
+        #     f.write('\n')
         self.B = np.dot((W.dot(np.linalg.inv(helpPW))), b)
         self.B0 = b[0] - np.dot(P[:, 0].T, self.B)
 

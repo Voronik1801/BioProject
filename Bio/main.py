@@ -9,17 +9,15 @@ import copy
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
-from numpy import linalg as LA
 from sklearn.metrics import r2_score
-from sklearn.linear_model import LinearRegression
 from scipy import stats
 import statsmodels.api as sm
 from sklearn.cross_decomposition import PLSRegression
 from methods.PLS1 import PLS1Regression
 from sklearn.metrics import r2_score
+from scipy.stats import ttest_rel
 
-
-components = [4, 6, 7, 10]
+components = [5, 7, 10, 12]
 
 def random_value():
     value = random.randint(0, 71)
@@ -27,7 +25,7 @@ def random_value():
 
 def main_pls():
     # Open csv and save
-    with open('pls_value.csv', 'r') as csv_file:
+    with open('BioProject/Bio/pls_value.csv', 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=';')
         dataForAnalys = list(csv_reader)
 
@@ -37,26 +35,20 @@ def main_pls():
 
     X = np.zeros((n, p))
     Y = np.zeros(n)
-    utils = Utils(X, Y)
+    utils = ls_ut(X, Y)
 
     # Saving data for analysis in main structure for pls
     utils.ImportToX(dataForAnalys)
     utils.ImportToY(dataForAnalys)
-    err = {}
-    for i in components:
-        err[i] = 0
+    err = utils.ErrorCVRobust(X, Y)
+    for i in err:
+        print(err[i])
+    # for i in components:
+    #     regress = PLS1Regression(X, Y, i, 'classic')
+    #     y_oz = regress.Predict(X)
+    #     R = r2_score(Y, y_oz)
+    #     print(R)
 
-    for i in range(100):
-        print(i)
-        checkY = copy.copy(Y)
-        val = random_value()
-        checkY[val] = 100
-        ret = utils.ErrorPLS1Robust(X, Y)
-        for k in components:
-            err[k] += ret[k]
-
-    for i in components:
-        print (err[i]/100)
 
 def draw_graph(G):
     options = {
@@ -77,9 +69,8 @@ class GraphStructure():
     def __init__(self):
         self.weights = []
         self.Graphs_full = []
-        self.Graph_atom = []
+        self.Graph_ost_wo = []
         self.Graph_ost = []
-        self.Graph_ost_atom = []
         self.surv_time = []
         self.property_kol = 0
     
@@ -97,14 +88,11 @@ class GraphStructure():
         self.donor = [donor[0].split('-')[0] for donor in donor_akceptor.values]
         self.akceptor = [akceptor[0].split('-')[1] for akceptor in donor_akceptor.values]
 
-        self.donor_atom = [d.split('.')[1] for d in self.donor]
-        self.akceptor_atom = [a.split('.')[1] for a in self.akceptor]
-
         self.donor_ost = [d.split('@')[0] for d in self.donor]
         self.akceptor_ost = [a.split('@')[0] for a in self.akceptor]
 
-        self.donor_ost_atom = [d.split('@')[1] for d in self.donor]
-        self.akceptor_ost_atom = [a.split('@')[1] for a in self.akceptor]
+        self.donor_ost_wo = [d.split('.')[0] for d in self.donor]
+        self.akceptor_ost_wo = [a.split('.')[0] for a in self.akceptor]
         
     def load_values_in_graph(self, donor, akceptor, weights):
         Graph = nx.Graph()
@@ -116,37 +104,14 @@ class GraphStructure():
     def creat_full_value_graph(self):
         for i in range(len(self.weights)):
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
-        # draw_graph(self.Graphs_full[70])
 
-    def creat_atom_value_graph(self):
+    def create_ost_wo_graph(self):
         for i in range(len(self.weights)):
-            self.Graph_atom.append(self.load_values_in_graph(self.donor_atom, self.akceptor_atom, self.weights[i]))
-        # draw_graph(self.Graph_atom[70])
+            self.Graph_ost_wo.append(self.load_values_in_graph(self.donor_ost_wo, self.akceptor_ost_wo, self.weights[i]))
 
     def creat_ost_value_graph(self):
         for i in range(len(self.weights)):
             self.Graph_ost.append(self.load_values_in_graph(self.donor_ost, self.akceptor_ost, self.weights[i]))
-        # draw_graph(self.Graph_ost[70])
-
-    def creat_ost_atom_value_graph(self):
-        for i in range(len(self.weights)):
-            self.Graph_ost_atom.append(self.load_values_in_graph(self.donor_ost_atom, self.akceptor_ost_atom, self.weights[i]))
-        # draw_graph(self.Graph_ost_atom[70])
-    
-    # def calculate_prop(self, G):
-    #     property = []
-    #     property.append(G.number_of_nodes()) 
-    #     property.append(G.number_of_edges()) 
-    #     property.append(nx.density(G)) 
-    #     # property.append(nx.radius(G)) 
-    #     # property.append(nx.diameter(G)) 
-    #     property.append(nx.transitivity(G)) 
-    #     property.append(nx.average_clustering(G)) 
-    #     property.append(nx.edge_connectivity(G)) 
-    #     property.append(nx.degree_assortativity_coefficient(G)) 
-    #     property.append(nx.algorithms.centrality.estrada_index(G)) 
-    #     property.append(nx.algorithms.approximation.clique.large_clique_size(G)) 
-    #     return property
 
     def calculate_prop(self, G):
         property = []   
@@ -160,10 +125,10 @@ class GraphStructure():
                     property.append(el)
         return property
 
-    def create_x_matrix_atom(self):
+    def create_x_matrix_ost_wo(self):
         X = np.zeros((len(self.weights), self.property_kol))
         for i in range(len(self.weights)):
-            prop = self.calculate_prop(self.Graph_atom[i])
+            prop = self.calculate_prop(self.Graph_ost_wo[i])
             for j in range(len(prop)):
                 X[i][j] = prop[j]
         return X
@@ -184,23 +149,15 @@ class GraphStructure():
                 X[i][j] = prop[j]
         return X
 
-    def create_x_matrix_ost_atom(self):
-        X = np.zeros((len(self.weights), self.property_kol))
-        for i in range(len(self.weights)):
-            prop = self.calculate_prop(self.Graph_ost_atom[i])
-            for j in range(len(prop)):
-                X[i][j] = prop[j]
-        return X
-
     def full_graph_calc(self):
         self.creat_full_value_graph()
         X = np.array(self.create_x_matrix_full())
         Y = np.array(self.surv_time)
         return X, Y
 
-    def atom_graph_calc(self):
-        self.creat_atom_value_graph()
-        X = np.array(self.create_x_matrix_atom())
+    def ost_without_sub_graph_calc(self):
+        self.create_ost_wo_graph()
+        X = np.array(self.create_x_matrix_ost_wo())
         Y = np.array(self.surv_time)
         return X, Y
     
@@ -210,11 +167,6 @@ class GraphStructure():
         Y = np.array(self.surv_time)
         return X, Y
 
-    def ost_atom_graph_calc(self):
-        self.creat_ost_atom_value_graph()
-        X = np.array(self.create_x_matrix_ost_atom())
-        Y = np.array(self.surv_time)
-        return X, Y
 
 def error(Y ,y_oz):
     dif = 0
@@ -240,7 +192,7 @@ def pls_prediction(X, Y, comp, method='classic'):
     regress = PLS1Regression(X, Y, comp, method)
     y_oz = regress.Predict(X)
     R = r2_score(Y, y_oz)
-    return y_oz, R
+    return y_oz, R, regress.B
 
 def write_x(X):
     f = open('result_graph_X.txt', 'w')
@@ -249,22 +201,54 @@ def write_x(X):
             f.write(str(X[i][j]) + '\t')
         f.write('\n')
 
+def calc_pvalue_for_coef(X, Y, k):
+    y_oz, R, ts_b = pls_prediction(X, Y, k)
+    t_stat = [stats.t.cdf(np.abs(i),(len(X)-1)) for i in ts_b]
+    p_values = [2*(1-i) for i in t_stat]
+    f = open('p_value.txt', 'w')
+    for i in range(len(p_values)):
+        f.write(str(p_values[i]) + '\n')
+    f.close()
+    f = open('betta.txt', 'w')
+    for i in range(len(ts_b)):
+        f.write(str(ts_b[i]) + '\n')
+    f.close()
+
+    f = open('t_stat.txt', 'w')
+    for i in range(len(t_stat)):
+        f.write(str(t_stat[i]) + '\n')
+    f.close()
+
+def calc_stat_for_model(X, Y, structure):
+    F = []
+    S = []
+    P = []
+    for k in components:
+        y_oz, R = pls_prediction(X, Y, k)
+        n = len(Y)
+        m = structure.property_kol
+        F.append((R / (1 - R)) * ((n - m - 1)/m))
+        stat, p = ttest_rel(Y, y_oz)
+        S.append(stat)
+        P.append(p)
+    print(F)
+    print(S)
+    print(P)
+
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
     
-    # structure.property_kol = 1062
-    # X, Y = structure.full_graph_calc() #1
+    structure.property_kol = 1062
+    X, Y = structure.full_graph_calc() #1
     # structure.property_kol = 1068
     # X, Y = structure.ost_graph_calc() #2
-
-    structure.property_kol = 650
-    X, Y = structure.atom_graph_calc() #3 650
-    # structure.property_kol = 182
-    # X, Y = structure.ost_atom_graph_calc() #4 182
+    # structure.property_kol = 698
+    # X, Y = structure.ost_without_sub_graph_calc() #2
     
     ut = ls_ut(X, Y)
     components = [5, 7, 10, 12]
+    # write_x(X)
 
     # for k in components:
     #     y_oz, R = pls_prediction(X, Y, k)
@@ -273,10 +257,10 @@ def main_graph():
     # ec = ut.ErrorPLS1Classic(X, Y)
     # for k in ec:
     #     print(ec[k])
-    print('---')
-    ecr = ut.ErrorPLS1Robust(X, Y)
-    for k in ecr:
-        print(ecr[k])
+    # print('---')
+    # ecr = ut.ErrorPLS1Robust(X, Y)
+    # for k in ecr:
+    #     print(ecr[k])
     # print('---')
     # ecv = ut.ErrorCVClassic(X, Y)
     # for k in ecv:
@@ -286,8 +270,8 @@ def main_graph():
     # for k in ecvr:
     #     print(ecvr[k])
 
+    calc_pvalue_for_coef(X, Y, 10)
 
-    # y_oz, R = pls_prediction(X, Y, 12)
     # ut.CreateTwoPlot(Y, y_oz)
-
-main_graph()
+# main_graph()
+main_pls()

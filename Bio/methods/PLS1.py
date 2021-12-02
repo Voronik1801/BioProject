@@ -3,6 +3,7 @@ import copy
 from scipy.optimize import minimize
 import time
 from .nelder_mead import nelder_mead
+from numpy import linalg as LA
 
 d = 3
 class PLS1Regression():
@@ -80,6 +81,7 @@ class PLS1Regression():
         self.X /= np.amax(self.X, axis=(0, 1))
 
     def PLS1(self):
+        # self.centerscale()
         # init X0 & y0
         Xk = self.X
         y = self.Y
@@ -98,8 +100,8 @@ class PLS1Regression():
 
         for k in range(0, self.components):
             t[:, k] = np.dot(Xk, W[:, k])  # x_scores
-            # t[:, k] = ne.evaluate("Xk*W[:, k]")  # x_scores
             tk_scalar = np.dot(t[:, k].T, t[:, k])
+            print(tk_scalar)
             t[:, k] = np.divide(t[:, k], tk_scalar)
 
             P[:, k] = np.dot(Xk.T, t[:, k])
@@ -116,11 +118,14 @@ class PLS1Regression():
                 W[:, k + 1] = np.dot(Xk.T, y)
 
         helpPW = np.dot(P.T, W)
+        # mult = np.dot(P.T, P)
         # f = open('result_graph_P.txt', 'w')
-        # for i in range(len(P)):
-        #     for j in range(len(P[0])):
-        #         f.write(str(P[i][j]) + '\t')
+        # for i in range(len(mult)):
+        #     for j in range(len(mult[0])):
+        #         f.write(str(mult[i][j]) + '\t')
         #     f.write('\n')
+        # print(LA.eig(P))
+        # print(b)
         self.B = np.dot((W.dot(np.linalg.inv(helpPW))), b)
         self.B0 = b[0] - np.dot(P[:, 0].T, self.B)
 

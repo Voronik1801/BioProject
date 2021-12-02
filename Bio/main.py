@@ -192,7 +192,7 @@ def pls_prediction(X, Y, comp, method='classic'):
     regress = PLS1Regression(X, Y, comp, method)
     y_oz = regress.Predict(X)
     R = r2_score(Y, y_oz)
-    return y_oz, R, regress.B
+    return y_oz, R
 
 def write_x(X):
     f = open('result_graph_X.txt', 'w')
@@ -250,10 +250,10 @@ def main_graph():
     components = [5, 7, 10, 12]
     # write_x(X)
 
-    # for k in components:
-    #     y_oz, R = pls_prediction(X, Y, k)
-    #     print(R)
-    # print('---')
+    for k in components:
+        y_oz, R = pls_prediction(X, Y, k)
+        # print(R)
+        print('---')
     # ec = ut.ErrorPLS1Classic(X, Y)
     # for k in ec:
     #     print(ec[k])
@@ -270,8 +270,8 @@ def main_graph():
     # for k in ecvr:
     #     print(ecvr[k])
 
-    calc_pvalue_for_coef(X, Y, 10)
+    # calc_pvalue_for_coef(X, Y, 10)
 
     # ut.CreateTwoPlot(Y, y_oz)
-# main_graph()
-main_pls()
+main_graph()
+# main_pls()

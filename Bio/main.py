@@ -247,7 +247,7 @@ def main_graph():
     # X, Y = structure.ost_without_sub_graph_calc() #2
     
     ut = ls_ut(X, Y)
-    components = [5, 7, 10, 12]
+    components = [5]
     # write_x(X)
 
     for k in components:

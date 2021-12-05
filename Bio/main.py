@@ -16,8 +16,10 @@ from sklearn.cross_decomposition import PLSRegression
 from methods.PLS1 import PLS1Regression
 from sklearn.metrics import r2_score
 from scipy.stats import ttest_rel
+import numpy.linalg as LA
+from itertools import groupby
 
-components = [5, 7, 10, 12]
+
 
 def random_value():
     value = random.randint(0, 71)
@@ -40,12 +42,13 @@ def main_pls():
     # Saving data for analysis in main structure for pls
     utils.ImportToX(dataForAnalys)
     utils.ImportToY(dataForAnalys)
-    err = utils.ErrorCVRobust(X, Y)
-    for i in err:
-        print(err[i])
+    err = utils.ErrorLib(X, Y)
+    # for i in err:
+        # print(err[i])
+    # components = [5]
     # for i in components:
-    #     regress = PLS1Regression(X, Y, i, 'classic')
-    #     y_oz = regress.Predict(X)
+        # regress = PLS1Regression(X, Y, i, 'classic')
+        # y_oz = regress.Predict(X)
     #     R = r2_score(Y, y_oz)
     #     print(R)
 
@@ -116,12 +119,15 @@ class GraphStructure():
     def calculate_prop(self, G):
         property = []   
         X = []
+        # last_enter = []
         v = nx.communicability_exp(G)
         for n in G.nodes:
-            property.append(nx.degree(G, n))
+            # property.append(nx.degree(G, n))
             for k in v[n]:
                 el = v[n][k]
-                if(el != 0):
+                # if el != 0 and el not in last_enter:
+                if el != 0:
+                    # last_enter.append(el)
                     property.append(el)
         return property
 
@@ -201,6 +207,8 @@ def write_x(X):
             f.write(str(X[i][j]) + '\t')
         f.write('\n')
 
+
+
 def calc_pvalue_for_coef(X, Y, k):
     y_oz, R, ts_b = pls_prediction(X, Y, k)
     t_stat = [stats.t.cdf(np.abs(i),(len(X)-1)) for i in ts_b]
@@ -235,25 +243,52 @@ def calc_stat_for_model(X, Y, structure):
     print(S)
     print(P)
 
+
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
-    
-    structure.property_kol = 1062
-    X, Y = structure.full_graph_calc() #1
+   
     # structure.property_kol = 1068
     # X, Y = structure.ost_graph_calc() #2
     # structure.property_kol = 698
-    # X, Y = structure.ost_without_sub_graph_calc() #2
+    # X, Y = structure.ost_without_sub_graph_calc() #3
     
-    ut = ls_ut(X, Y)
-    components = [5]
-    # write_x(X)
+    structure.property_kol = 1062
+    X, Y = structure.full_graph_calc() #1
+    ######### удаляем столбцы где все элементы одинаковые
+    X = np.round(X, 7)
+    b = X == X[0,:]
+    c = b.all(axis=0)
+    X = X[:,~c]
+    X = np.unique(X, axis=1)
+    ######### удаляем все столбцы где много 0
+    # k = len(X[0])
+    # i = 0
+    # while True:
+    #     if(X[0][i] == 0):
+    #         X = np.delete(X, i, axis=1)
+    #         k = len(X[0])
+    #     else:
+    #         i += 1
+    #     if i + 1 == k:
+    #         break
+    ######### удаляем линейно зависимые строки
+    # q,r = np.linalg.qr(X)
+    # a = np.abs(np.diag(r))>=1e-10
+    # X = X[a]
+    # Y =Y[a]
+    
+    write_x(X)
 
-    for k in components:
-        y_oz, R = pls_prediction(X, Y, k)
-        # print(R)
-        print('---')
+
+    ut = ls_ut(X, Y)
+    components = [5, 7, 10, 12]
+    print(LA.det(np.dot(X.T, X)))
+    print(LA.eig(np.dot(X.T, X)))
+    # for k in components:
+    #     y_oz, R = pls_prediction(X, Y, k)
+    #     print(R)
+    #     print('---')
     # ec = ut.ErrorPLS1Classic(X, Y)
     # for k in ec:
     #     print(ec[k])

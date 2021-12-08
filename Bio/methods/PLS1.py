@@ -81,7 +81,7 @@ class PLS1Regression():
         self.X /= np.amax(self.X, axis=(0, 1))
 
     def PLS1(self):
-        self.centerscale()
+        # self.centerscale()
         # init X0 & y0
         Xk = self.X
         y = self.Y

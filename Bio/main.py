@@ -2,6 +2,7 @@ import csv
 from networkx.algorithms.shortest_paths import weighted
 from networkx.classes.function import degree
 from networkx.generators.trees import prefix_tree
+from networkx.readwrite.edgelist import write_edgelist
 import numpy as np
 from methods.utils import Utils as ls_ut
 import random
@@ -19,6 +20,7 @@ from scipy.stats import ttest_rel
 import numpy.linalg as LA
 from itertools import groupby
 
+components = [5]
 
 
 def random_value():
@@ -43,6 +45,8 @@ def main_pls():
     utils.ImportToX(dataForAnalys)
     utils.ImportToY(dataForAnalys)
     err = utils.ErrorLib(X, Y)
+    
+    # print(LA.det(np.dot(X.T, X)))
     # for i in err:
         # print(err[i])
     # components = [5]
@@ -120,15 +124,27 @@ class GraphStructure():
         property = []   
         X = []
         # last_enter = []
-        v = nx.communicability_exp(G)
-        for n in G.nodes:
-            # property.append(nx.degree(G, n))
-            for k in v[n]:
-                el = v[n][k]
-                # if el != 0 and el not in last_enter:
-                if el != 0:
-                    # last_enter.append(el)
-                    property.append(el)
+        v = nx.adjacency_matrix(G)
+        # res = np.array([list(item.values()) for item in v.values()])
+        res = v.data
+        f = open('result_graph_X.txt', 'w')
+        for i in range(len(res)):
+            for j in range(len(res[0])):
+                f.write(str(res[i][j]) + '\t')
+            f.write('\n')
+        verh_treug = np.triu(res)
+        for i in range(len(verh_treug)):
+            for j in range(len(verh_treug[0])):
+                if verh_treug[i][j]!=0:
+                    property.append(verh_treug[i][j])
+        # for n in G.nodes:
+        #     # property.append(nx.degree(G, n))
+        #     for k in v[n]:
+        #         el = v[n][k]
+        #         # if el != 0 and el not in last_enter:
+        #         if el != 0:
+        #             # last_enter.append(el)
+        #             property.append(el)
         return property
 
     def create_x_matrix_ost_wo(self):
@@ -243,6 +259,16 @@ def calc_stat_for_model(X, Y, structure):
     print(S)
     print(P)
 
+def norm_X(X):
+    for i in range(len(X[0])):
+        arr = X[:,i]
+        d = np.var(arr)
+        a = np.var(X, axis = 0)
+        for j in range(len(arr)):
+            arr[j] = arr[j] / np.sqrt(d)
+        X[:, i] = arr
+    return X
+
 
 def main_graph():
     structure = GraphStructure()
@@ -253,7 +279,7 @@ def main_graph():
     # structure.property_kol = 698
     # X, Y = structure.ost_without_sub_graph_calc() #3
     
-    structure.property_kol = 1062
+    structure.property_kol = 60000
     X, Y = structure.full_graph_calc() #1
     ######### удаляем столбцы где все элементы одинаковые
     X = np.round(X, 7)
@@ -261,6 +287,9 @@ def main_graph():
     c = b.all(axis=0)
     X = X[:,~c]
     X = np.unique(X, axis=1)
+    X = norm_X(X)
+    X -= np.amin(X, axis=(0, 1))
+    X /= np.amax(X, axis=(0, 1))
     ######### удаляем все столбцы где много 0
     # k = len(X[0])
     # i = 0
@@ -273,27 +302,30 @@ def main_graph():
     #     if i + 1 == k:
     #         break
     ######### удаляем линейно зависимые строки
-    # q,r = np.linalg.qr(X)
+    # q,r = np.linalg.qr(X.T)
     # a = np.abs(np.diag(r))>=1e-10
     # X = X[a]
     # Y =Y[a]
-    
+    #####
+    # for i in range(len(X)):
+    #     for j in range(len(X[0])):
+    #         if X[i][j] == 0.0:
+    #             X[i][j] = 0.0001
+    # write_x(np.dot(X.T, X))
     write_x(X)
-
-
     ut = ls_ut(X, Y)
     components = [5, 7, 10, 12]
     print(LA.det(np.dot(X.T, X)))
-    print(LA.eig(np.dot(X.T, X)))
-    # for k in components:
-    #     y_oz, R = pls_prediction(X, Y, k)
-    #     print(R)
-    #     print('---')
+    # print(LA.eig(np.dot(X.T, X)))
+    for k in components:
+        y_oz, R = pls_prediction(X, Y, k)
+        print(R)
+        print('---')
     # ec = ut.ErrorPLS1Classic(X, Y)
     # for k in ec:
     #     print(ec[k])
     # print('---')
-    # ecr = ut.ErrorPLS1Robust(X, Y)
+    # ecr = ut.ErrorPLS1Robust(X, eY)
     # for k in ecr:
     #     print(ecr[k])
     # print('---')
@@ -310,3 +342,61 @@ def main_graph():
     # ut.CreateTwoPlot(Y, y_oz)
 main_graph()
 # main_pls()
+
+# G1 = nx.Graph()
+# G1.add_edge(0, 1, weight=0.1)
+# G1.add_edge(0, 2, weight=1.1)
+# G1.add_edge(1, 4, weight=0.4)
+# G1.add_edge(4, 5, weight=0.3)
+
+# glist = [ nx.Graph([(0, 1), (1, 2), (1, 5), (5, 4), (2, 4), (2, 3), (4, 3), (3, 6)]), G1]
+
+# X = nx.communicability_exp(glist[0])
+# res = np.array([list(item.values()) for item in X.values()])
+# def prop(G):
+#     X = nx.communicability_exp(G)
+#     res = np.array([list(item.values()) for item in X.values()])
+#     property = []
+#     for i in range(len(res)):
+#         for j in range(len(res[0])):
+#             if res[i][j]!=0:
+#                 property.append(res[i][j])
+#     return property
+
+# X = np.zeros((2, 49))
+# for i in range(len(glist)):
+#     property = prop(glist[i])
+#     for j in range(len(property)):
+#         X[i][j] = property[j]
+
+# X = np.round(X, 5)
+# b = X == X[0,:]
+# c = b.all(axis=0)
+# X = X[:,~c]
+# X = np.unique(X, axis=1)
+# q,r = np.linalg.qr(X.T)
+# a = np.abs(np.diag(r))>=1e-10
+# X = X[a]
+
+# X = nx.communicability(glist[1])
+# X = np.array([list(item.values()) for item in X.values()])
+# X = np.triu(X)
+# X = np.round(X, 3)
+# f = open('result_graph_X.txt', 'w')
+# X = np.dot(X.T, X)
+# for i in range(len(X)):
+#     for j in range(len(X[0])):
+#         f.write(str(X[i][j]) + '\t')
+#     f.write('\n')
+# print(LA.det(np.dot(X.T, X)))
+# print(LA.det(np.dot(res.T, res)))
+
+# X = nx.communicability_exp(glist[0])
+# res = np.array([list(item.values()) for item in X.values()])
+# res = np.triu(res)
+# property = []
+# for i in range(len(res)):
+#     for j in range(len(res[0])):
+#         if res[i][j]!=0:
+#             property.append(res[i][j])
+# print(np.triu(res))

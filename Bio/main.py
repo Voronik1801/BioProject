@@ -19,6 +19,7 @@ from sklearn.metrics import r2_score
 from scipy.stats import ttest_rel
 import numpy.linalg as LA
 from itertools import groupby
+from networkx.algorithms import approximation as approx
 
 components = [5]
 
@@ -122,29 +123,16 @@ class GraphStructure():
 
     def calculate_prop(self, G):
         property = []   
-        X = []
-        # last_enter = []
-        v = nx.adjacency_matrix(G)
-        # res = np.array([list(item.values()) for item in v.values()])
-        res = v.data
-        f = open('result_graph_X.txt', 'w')
-        for i in range(len(res)):
-            for j in range(len(res[0])):
-                f.write(str(res[i][j]) + '\t')
-            f.write('\n')
-        verh_treug = np.triu(res)
-        for i in range(len(verh_treug)):
-            for j in range(len(verh_treug[0])):
-                if verh_treug[i][j]!=0:
-                    property.append(verh_treug[i][j])
-        # for n in G.nodes:
-        #     # property.append(nx.degree(G, n))
-        #     for k in v[n]:
-        #         el = v[n][k]
-        #         # if el != 0 and el not in last_enter:
-        #         if el != 0:
-        #             # last_enter.append(el)
-        #             property.append(el)
+        nodes = G.nodes
+        degree_sequence = [d for n, d in G.degree()]
+        property=degree_sequence
+        for n in nodes:
+            property.append(len(list(nx.dfs_postorder_nodes(G, n))))
+            cycles = nx.cycle_basis(G, n)
+            property.append(len(cycles))
+            # cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
+            # if cycle != []:
+                # property.append(max(cycle))
         return property
 
     def create_x_matrix_ost_wo(self):
@@ -279,39 +267,22 @@ def main_graph():
     # structure.property_kol = 698
     # X, Y = structure.ost_without_sub_graph_calc() #3
     
-    structure.property_kol = 60000
+    structure.property_kol = 1500
     X, Y = structure.full_graph_calc() #1
     ######### удаляем столбцы где все элементы одинаковые
-    X = np.round(X, 7)
+    X = np.unique(X, axis=1)
     b = X == X[0,:]
     c = b.all(axis=0)
     X = X[:,~c]
-    X = np.unique(X, axis=1)
-    X = norm_X(X)
     X -= np.amin(X, axis=(0, 1))
     X /= np.amax(X, axis=(0, 1))
-    ######### удаляем все столбцы где много 0
-    # k = len(X[0])
-    # i = 0
-    # while True:
-    #     if(X[0][i] == 0):
-    #         X = np.delete(X, i, axis=1)
-    #         k = len(X[0])
-    #     else:
-    #         i += 1
-    #     if i + 1 == k:
-    #         break
+    X = norm_X(X)
+    X = np.round(X, 4)
     ######### удаляем линейно зависимые строки
-    # q,r = np.linalg.qr(X.T)
+    # q,r = np.linalg.qr(X)
     # a = np.abs(np.diag(r))>=1e-10
     # X = X[a]
     # Y =Y[a]
-    #####
-    # for i in range(len(X)):
-    #     for j in range(len(X[0])):
-    #         if X[i][j] == 0.0:
-    #             X[i][j] = 0.0001
-    # write_x(np.dot(X.T, X))
     write_x(X)
     ut = ls_ut(X, Y)
     components = [5, 7, 10, 12]
@@ -343,45 +314,38 @@ def main_graph():
 main_graph()
 # main_pls()
 
-# G1 = nx.Graph()
-# G1.add_edge(0, 1, weight=0.1)
-# G1.add_edge(0, 2, weight=1.1)
-# G1.add_edge(1, 4, weight=0.4)
-# G1.add_edge(4, 5, weight=0.3)
+G1 = nx.Graph()
+G1.add_edge(0, 1, weight=0.1)
+G1.add_edge(0, 2, weight=1.1)
+G1.add_edge(1, 4, weight=0.4)
+G1.add_edge(4, 5, weight=0.3)
 
-# glist = [ nx.Graph([(0, 1), (1, 2), (1, 5), (5, 4), (2, 4), (2, 3), (4, 3), (3, 6)]), G1]
+glist = [ nx.Graph([(0, 1), (1, 2), (1, 5), (5, 4), (2, 4), (2, 3), (4, 3), (3, 6)]), G1]
 
-# X = nx.communicability_exp(glist[0])
-# res = np.array([list(item.values()) for item in X.values()])
+
 # def prop(G):
-#     X = nx.communicability_exp(G)
-#     res = np.array([list(item.values()) for item in X.values()])
-#     property = []
-#     for i in range(len(res)):
-#         for j in range(len(res[0])):
-#             if res[i][j]!=0:
-#                 property.append(res[i][j])
+#     property = []   
+#     nodes = G.nodes
+#     degree_sequence = [d for n, d in G.degree()]
+#     property=degree_sequence
+#     for n in nodes:
+#         property.append(len(list(nx.dfs_postorder_nodes(G, n))))
+#         property.append(nx.triangles(G, n))
+#         cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
+#         if cycle != []:
+#             property.append(max(cycle))
 #     return property
 
-# X = np.zeros((2, 49))
+# X = np.zeros((2, 100))
 # for i in range(len(glist)):
 #     property = prop(glist[i])
 #     for j in range(len(property)):
 #         X[i][j] = property[j]
-
+# X = np.unique(X, axis=1)
 # X = np.round(X, 5)
 # b = X == X[0,:]
 # c = b.all(axis=0)
 # X = X[:,~c]
-# X = np.unique(X, axis=1)
-# q,r = np.linalg.qr(X.T)
-# a = np.abs(np.diag(r))>=1e-10
-# X = X[a]
-
-# X = nx.communicability(glist[1])
-# X = np.array([list(item.values()) for item in X.values()])
-# X = np.triu(X)
-# X = np.round(X, 3)
 # f = open('result_graph_X.txt', 'w')
 # X = np.dot(X.T, X)
 # for i in range(len(X)):
@@ -389,14 +353,3 @@ main_graph()
 #         f.write(str(X[i][j]) + '\t')
 #     f.write('\n')
 # print(LA.det(np.dot(X.T, X)))
-# print(LA.det(np.dot(res.T, res)))
-
-# X = nx.communicability_exp(glist[0])
-# res = np.array([list(item.values()) for item in X.values()])
-# res = np.triu(res)
-# property = []
-# for i in range(len(res)):
-#     for j in range(len(res[0])):
-#         if res[i][j]!=0:
-#             property.append(res[i][j])
-# print(np.triu(res))

@@ -64,7 +64,7 @@ def draw_graph(G):
         'node_size': 15,
         'width': 0.5,
     }
-    nx.draw(G, **options) 
+    nx.draw(G, cmap = plt.get_cmap('jet'),node_color='red',with_labels=True) 
     plt.show()
 
 def calulate_property(G):
@@ -81,6 +81,14 @@ class GraphStructure():
         self.Graph_ost = []
         self.surv_time = []
         self.property_kol = 0
+        self.subgraph_type = {
+            2: False,
+            3: False,
+            4: False,
+            5: False,
+            6: False,
+            7: False,
+        }
     
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
@@ -113,35 +121,20 @@ class GraphStructure():
         for i in range(len(self.weights)):
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
 
-    def create_ost_wo_graph(self):
-        for i in range(len(self.weights)):
-            self.Graph_ost_wo.append(self.load_values_in_graph(self.donor_ost_wo, self.akceptor_ost_wo, self.weights[i]))
-
-    def creat_ost_value_graph(self):
-        for i in range(len(self.weights)):
-            self.Graph_ost.append(self.load_values_in_graph(self.donor_ost, self.akceptor_ost, self.weights[i]))
-
     def calculate_prop(self, G):
         property = []   
         nodes = G.nodes
         degree_sequence = [d for n, d in G.degree()]
         property=degree_sequence
-        for n in nodes:
-            property.append(len(list(nx.dfs_postorder_nodes(G, n))))
-            cycles = nx.cycle_basis(G, n)
-            property.append(len(cycles))
+        # for n in nodes:
+        #     property.append(len(list(nx.dfs_postorder_nodes(G, n))))
+        #     cycles = nx.cycle_basis(G, n)
+        #     property.append(len(cycles))
             # cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
             # if cycle != []:
                 # property.append(max(cycle))
         return property
 
-    def create_x_matrix_ost_wo(self):
-        X = np.zeros((len(self.weights), self.property_kol))
-        for i in range(len(self.weights)):
-            prop = self.calculate_prop(self.Graph_ost_wo[i])
-            for j in range(len(prop)):
-                X[i][j] = prop[j]
-        return X
     
     def create_x_matrix_full(self):
         X = np.zeros((len(self.weights), self.property_kol))
@@ -151,32 +144,12 @@ class GraphStructure():
                 X[i][j] = prop[j]
         return X
 
-    def create_x_matrix_ost(self):
-        X = np.zeros((len(self.weights), self.property_kol))
-        for i in range(len(self.weights)):
-            prop = self.calculate_prop(self.Graph_ost[i])
-            for j in range(len(prop)):
-                X[i][j] = prop[j]
-        return X
 
     def full_graph_calc(self):
         self.creat_full_value_graph()
         X = np.array(self.create_x_matrix_full())
         Y = np.array(self.surv_time)
         return X, Y
-
-    def ost_without_sub_graph_calc(self):
-        self.create_ost_wo_graph()
-        X = np.array(self.create_x_matrix_ost_wo())
-        Y = np.array(self.surv_time)
-        return X, Y
-    
-    def ost_graph_calc(self):
-        self.creat_ost_value_graph()
-        X = np.array(self.create_x_matrix_ost())
-        Y = np.array(self.surv_time)
-        return X, Y
-
 
 def error(Y ,y_oz):
     dif = 0
@@ -206,46 +179,14 @@ def pls_prediction(X, Y, comp, method='classic'):
 
 def write_x(X):
     f = open('result_graph_X.txt', 'w')
-    for i in range(len(X)):
-        for j in range(len(X[0])):
-            f.write(str(X[i][j]) + '\t')
-        f.write('\n')
+    # for i in range(len(X)):
+    #     for j in range(len(X[0])):
+    #         f.write(str(X[i][j]) + '\t')
+    for row in X:
+        row = np.asarray(row).reshape(-1)
+        f.write('\t'.join([str(a) for a in row]) + '\n')
 
 
-
-def calc_pvalue_for_coef(X, Y, k):
-    y_oz, R, ts_b = pls_prediction(X, Y, k)
-    t_stat = [stats.t.cdf(np.abs(i),(len(X)-1)) for i in ts_b]
-    p_values = [2*(1-i) for i in t_stat]
-    f = open('p_value.txt', 'w')
-    for i in range(len(p_values)):
-        f.write(str(p_values[i]) + '\n')
-    f.close()
-    f = open('betta.txt', 'w')
-    for i in range(len(ts_b)):
-        f.write(str(ts_b[i]) + '\n')
-    f.close()
-
-    f = open('t_stat.txt', 'w')
-    for i in range(len(t_stat)):
-        f.write(str(t_stat[i]) + '\n')
-    f.close()
-
-def calc_stat_for_model(X, Y, structure):
-    F = []
-    S = []
-    P = []
-    for k in components:
-        y_oz, R = pls_prediction(X, Y, k)
-        n = len(Y)
-        m = structure.property_kol
-        F.append((R / (1 - R)) * ((n - m - 1)/m))
-        stat, p = ttest_rel(Y, y_oz)
-        S.append(stat)
-        P.append(p)
-    print(F)
-    print(S)
-    print(P)
 
 def norm_X(X):
     for i in range(len(X[0])):
@@ -266,32 +207,41 @@ def main_graph():
     # X, Y = structure.ost_graph_calc() #2
     # structure.property_kol = 698
     # X, Y = structure.ost_without_sub_graph_calc() #3
-    
     structure.property_kol = 1500
     X, Y = structure.full_graph_calc() #1
+    G = structure.Graphs_full[0]
+
+    
+    adj = nx.incidence_matrix(G)
+    adj = adj.todense()
+    write_x(adj)
+    nodes = G.nodes()
+    for n in nodes:
+        a = nx.subgraph(G, n)
+        print(a.edges)
     ######### удаляем столбцы где все элементы одинаковые
-    X = np.unique(X, axis=1)
-    b = X == X[0,:]
-    c = b.all(axis=0)
-    X = X[:,~c]
-    X -= np.amin(X, axis=(0, 1))
-    X /= np.amax(X, axis=(0, 1))
-    X = norm_X(X)
-    X = np.round(X, 4)
+    # X = np.unique(X, axis=1)
+    # b = X == X[0,:]
+    # c = b.all(axis=0)
+    # X = X[:,~c]
+    # X -= np.amin(X, axis=(0, 1))
+    # X /= np.amax(X, axis=(0, 1))
+    # X = norm_X(X)
+    # X = np.round(X, 4)
     ######### удаляем линейно зависимые строки
     # q,r = np.linalg.qr(X)
     # a = np.abs(np.diag(r))>=1e-10
     # X = X[a]
     # Y =Y[a]
-    write_x(X)
-    ut = ls_ut(X, Y)
-    components = [5, 7, 10, 12]
-    print(LA.det(np.dot(X.T, X)))
-    # print(LA.eig(np.dot(X.T, X)))
-    for k in components:
-        y_oz, R = pls_prediction(X, Y, k)
-        print(R)
-        print('---')
+    # write_x(X)
+    # ut = ls_ut(X, Y)
+    # components = [5, 7, 10, 12]
+    # print(LA.det(np.dot(X.T, X)))
+    # # print(LA.eig(np.dot(X.T, X)))
+    # for k in components:
+    #     y_oz, R = pls_prediction(X, Y, k)
+    #     print(R)
+    #     print('---')
     # ec = ut.ErrorPLS1Classic(X, Y)
     # for k in ec:
     #     print(ec[k])
@@ -314,42 +264,66 @@ def main_graph():
 main_graph()
 # main_pls()
 
-G1 = nx.Graph()
-G1.add_edge(0, 1, weight=0.1)
-G1.add_edge(0, 2, weight=1.1)
-G1.add_edge(1, 4, weight=0.4)
-G1.add_edge(4, 5, weight=0.3)
+# G1 = nx.Graph()
+# G1.add_edge(0, 1, weight=0.1)
+# G1.add_edge(0, 2, weight=1.1)
+# G1.add_edge(1, 4, weight=0.4)
+# G1.add_edge(4, 5, weight=0.3)
 
-glist = [ nx.Graph([(0, 1), (1, 2), (1, 5), (5, 4), (2, 4), (2, 3), (4, 3), (3, 6)]), G1]
+# glist = [ nx.Graph([(0, 1), (1, 2), (1, 5), (5, 4), (2, 4), (2, 3), (4, 3), (3, 6)]), G1]
 
+# # draw_graph(glist[0])
+# # draw_graph(glist[1])
 
 # def prop(G):
 #     property = []   
 #     nodes = G.nodes
-#     degree_sequence = [d for n, d in G.degree()]
-#     property=degree_sequence
+#     # degree_sequence = [d for n, d in G.degree()]
+#     # property=degree_sequence
 #     for n in nodes:
+#         property.append(nx.degree(G, n))
 #         property.append(len(list(nx.dfs_postorder_nodes(G, n))))
-#         property.append(nx.triangles(G, n))
+#         cycles = nx.cycle_basis(G, n)
+#         property.append(len(cycles))
 #         cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
 #         if cycle != []:
 #             property.append(max(cycle))
 #     return property
 
-# X = np.zeros((2, 100))
+# X = np.zeros((2, 28))
 # for i in range(len(glist)):
 #     property = prop(glist[i])
 #     for j in range(len(property)):
 #         X[i][j] = property[j]
-# X = np.unique(X, axis=1)
-# X = np.round(X, 5)
-# b = X == X[0,:]
-# c = b.all(axis=0)
-# X = X[:,~c]
-# f = open('result_graph_X.txt', 'w')
-# X = np.dot(X.T, X)
+
+# f = open('first.txt', 'w')
 # for i in range(len(X)):
 #     for j in range(len(X[0])):
 #         f.write(str(X[i][j]) + '\t')
 #     f.write('\n')
-# print(LA.det(np.dot(X.T, X)))
+
+# X = np.round(X, 5)
+# b = X == X[0,:]
+# c = b.all(axis=0)
+# X = X[:,~c]
+
+# f = open('second.txt', 'w')
+# for i in range(len(X)):
+#     for j in range(len(X[0])):
+#         f.write(str(X[i][j]) + '\t')
+#     f.write('\n')
+
+# X = np.unique(X, axis=1)
+# f = open('third.txt', 'w')
+# for i in range(len(X)):
+#     for j in range(len(X[0])):
+#         f.write(str(X[i][j]) + '\t')
+#     f.write('\n')
+
+# mult = np.dot(X.T, X)
+# f = open('fourth.txt', 'w')
+# for i in range(len(mult)):
+#     for j in range(len(mult[0])):
+#         f.write(str(mult[i][j]) + '\t')
+#     f.write('\n')
+# print(LA.det(mult))

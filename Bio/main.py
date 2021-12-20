@@ -64,7 +64,8 @@ def draw_graph(G):
         'node_size': 15,
         'width': 0.5,
     }
-    nx.draw(G, cmap = plt.get_cmap('jet'),node_color='red',with_labels=True) 
+    # nx.draw(G, cmap = plt.get_cmap('jet'),node_color='red',with_labels=True) 
+    nx.draw(G, **options) 
     plt.show()
 
 def calulate_property(G):
@@ -81,14 +82,8 @@ class GraphStructure():
         self.Graph_ost = []
         self.surv_time = []
         self.property_kol = 0
-        self.subgraph_type = {
-            2: False,
-            3: False,
-            4: False,
-            5: False,
-            6: False,
-            7: False,
-        }
+        self.connection_nodes = []
+        self.new = []
     
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
@@ -120,19 +115,92 @@ class GraphStructure():
     def creat_full_value_graph(self):
         for i in range(len(self.weights)):
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
+        for i in range(len(self.weights)):
+            conn = self.anslysis_graph(self.Graphs_full[i])
+            self.connection_nodes.append(conn)
+        for i in range(len(self.weights)):
+            self.new.append(self.new_graph(self.Graphs_full[i], i) )
+        self.Graphs_full = self.new
+        draw_graph(self.Graphs_full[0])
+                           
+    
+    def new_graph(self, G, i):
+        Graph = nx.Graph()
+        for connection in self.connection_nodes[i]:
+            # adj = adj.todense()
+            for node in connection:
+                a = list(G.edges)
+                for n in a:
+                    if node in n:
+                        n = list(n)
+                        Graph.add_edge(n[0], n[1])
+        # draw_graph(Graph)
+        return Graph
+
+    def anslysis_graph(self, G):
+        exsisting_subgraph = []
+        max = 0
+        for n in G.nodes:
+            subgraph = nx.Graph(list(nx.dfs_postorder_nodes(G, n)))
+            if subgraph not in exsisting_subgraph:
+                if a > 1 and a < 6:
+                    subgraph_type[a] = list(nx.dfs_postorder_nodes(G, n))
+                    # dfs = 
+                    conn.append(subgraph_type[a])
+        return conn
+
+
+    # def anslysis_graph(self, G):
+    #     subgraph_type = {
+    #         2: False,
+    #         3: False,
+    #         4: False,
+    #         5: False,
+    #         6: False,
+    #         7: False,
+    #         8: False,
+    #         9: False,
+    #         10: False,
+    #         11: False,
+    #         12: False,
+    #     }
+    #     conn = []
+    #     max = 0
+    #     for n in G.nodes:
+    #         a = len(list(nx.dfs_postorder_nodes(G, n)))
+    #         if not subgraph_type[a]:
+    #             if a > 1 and a < 6:
+    #                 subgraph_type[a] = list(nx.dfs_postorder_nodes(G, n))
+    #                 # dfs = 
+    #                 conn.append(subgraph_type[a])
+    #     return conn
+    
+    # def anslysis_graph(self, G):
+    #     conn = []
+    #     k = 0
+    #     for n in G.nodes:
+    #         a = len(list(nx.dfs_postorder_nodes(G, n)))
+    #         # if a == 2 and k == 0:
+    #         #     k = 1
+    #         #     dfs = list(nx.dfs_postorder_nodes(G, n))
+    #         #     conn.append(dfs)
+    #         if a > 4 and a < 6:
+    #             dfs = list(nx.dfs_postorder_nodes(G, n))
+    #             conn.append(dfs)
+    #     return conn
 
     def calculate_prop(self, G):
         property = []   
         nodes = G.nodes
         degree_sequence = [d for n, d in G.degree()]
         property=degree_sequence
-        # for n in nodes:
-        #     property.append(len(list(nx.dfs_postorder_nodes(G, n))))
-        #     cycles = nx.cycle_basis(G, n)
-        #     property.append(len(cycles))
-            # cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
-            # if cycle != []:
-                # property.append(max(cycle))
+        for n in nodes:
+            property.append(len(list(nx.dfs_postorder_nodes(G, n))))
+            cycles = nx.cycle_basis(G, n)
+            property.append(len(cycles))
+            cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
+            if cycle != []:
+                property.append(max(cycle))
         return property
 
     
@@ -207,41 +275,31 @@ def main_graph():
     # X, Y = structure.ost_graph_calc() #2
     # structure.property_kol = 698
     # X, Y = structure.ost_without_sub_graph_calc() #3
-    structure.property_kol = 1500
+    structure.property_kol = 100
     X, Y = structure.full_graph_calc() #1
-    G = structure.Graphs_full[0]
-
-    
-    adj = nx.incidence_matrix(G)
-    adj = adj.todense()
-    write_x(adj)
-    nodes = G.nodes()
-    for n in nodes:
-        a = nx.subgraph(G, n)
-        print(a.edges)
-    ######### удаляем столбцы где все элементы одинаковые
-    # X = np.unique(X, axis=1)
-    # b = X == X[0,:]
-    # c = b.all(axis=0)
-    # X = X[:,~c]
-    # X -= np.amin(X, axis=(0, 1))
-    # X /= np.amax(X, axis=(0, 1))
-    # X = norm_X(X)
-    # X = np.round(X, 4)
+    # ######### удаляем столбцы где все элементы одинаковые
+    X = np.unique(X, axis=1)
+    b = X == X[0,:]
+    c = b.all(axis=0)
+    X = X[:,~c]
+    X -= np.amin(X, axis=(0, 1))
+    X /= np.amax(X, axis=(0, 1))
+    X = norm_X(X)
+    X = np.round(X, 4)
     ######### удаляем линейно зависимые строки
     # q,r = np.linalg.qr(X)
     # a = np.abs(np.diag(r))>=1e-10
     # X = X[a]
     # Y =Y[a]
-    # write_x(X)
+    write_x(X)
     # ut = ls_ut(X, Y)
-    # components = [5, 7, 10, 12]
-    # print(LA.det(np.dot(X.T, X)))
+    components = [5, 7, 10, 12]
+    print(LA.det(np.dot(X.T, X)))
     # # print(LA.eig(np.dot(X.T, X)))
-    # for k in components:
-    #     y_oz, R = pls_prediction(X, Y, k)
-    #     print(R)
-    #     print('---')
+    for k in components:
+        y_oz, R = pls_prediction(X, Y, k)
+        print(R)
+        print('---')
     # ec = ut.ErrorPLS1Classic(X, Y)
     # for k in ec:
     #     print(ec[k])

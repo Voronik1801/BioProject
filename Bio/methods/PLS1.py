@@ -123,7 +123,7 @@ class PLS1Regression():
             for j in range(len(P[0])):
                 f.write(str(P[i][j]) + '\t')
             f.write('\n')
-        print(b)
+        # print(b)
         self.B = np.dot((W.dot(np.linalg.inv(helpPW))), b)
         self.B0 = b[0] - np.dot(P[:, 0].T, self.B)
 

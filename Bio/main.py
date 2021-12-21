@@ -1,4 +1,5 @@
 import csv
+from networkx.algorithms.isomorphism import isomorph
 from networkx.algorithms.shortest_paths import weighted
 from networkx.classes.function import degree
 from networkx.generators.trees import prefix_tree
@@ -116,78 +117,25 @@ class GraphStructure():
         for i in range(len(self.weights)):
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
         for i in range(len(self.weights)):
-            conn = self.anslysis_graph(self.Graphs_full[i])
-            self.connection_nodes.append(conn)
-        for i in range(len(self.weights)):
-            self.new.append(self.new_graph(self.Graphs_full[i], i) )
+            self.new.append(self.anslysis_graph(self.Graphs_full[i]))
         self.Graphs_full = self.new
-        draw_graph(self.Graphs_full[0])
                            
     
-    def new_graph(self, G, i):
-        Graph = nx.Graph()
-        for connection in self.connection_nodes[i]:
-            # adj = adj.todense()
-            for node in connection:
-                a = list(G.edges)
-                for n in a:
-                    if node in n:
-                        n = list(n)
-                        Graph.add_edge(n[0], n[1])
-        # draw_graph(Graph)
-        return Graph
-
     def anslysis_graph(self, G):
         exsisting_subgraph = []
         max = 0
+        new_Graph = nx.Graph()
         for n in G.nodes:
-            subgraph = nx.Graph(list(nx.dfs_postorder_nodes(G, n)))
+            nodes_subgraph = list(nx.dfs_edges(G, n))
+            sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
+            subgraph = nx.Graph(sub)
             if subgraph not in exsisting_subgraph:
-                if a > 1 and a < 6:
-                    subgraph_type[a] = list(nx.dfs_postorder_nodes(G, n))
-                    # dfs = 
-                    conn.append(subgraph_type[a])
-        return conn
-
-
-    # def anslysis_graph(self, G):
-    #     subgraph_type = {
-    #         2: False,
-    #         3: False,
-    #         4: False,
-    #         5: False,
-    #         6: False,
-    #         7: False,
-    #         8: False,
-    #         9: False,
-    #         10: False,
-    #         11: False,
-    #         12: False,
-    #     }
-    #     conn = []
-    #     max = 0
-    #     for n in G.nodes:
-    #         a = len(list(nx.dfs_postorder_nodes(G, n)))
-    #         if not subgraph_type[a]:
-    #             if a > 1 and a < 6:
-    #                 subgraph_type[a] = list(nx.dfs_postorder_nodes(G, n))
-    #                 # dfs = 
-    #                 conn.append(subgraph_type[a])
-    #     return conn
-    
-    # def anslysis_graph(self, G):
-    #     conn = []
-    #     k = 0
-    #     for n in G.nodes:
-    #         a = len(list(nx.dfs_postorder_nodes(G, n)))
-    #         # if a == 2 and k == 0:
-    #         #     k = 1
-    #         #     dfs = list(nx.dfs_postorder_nodes(G, n))
-    #         #     conn.append(dfs)
-    #         if a > 4 and a < 6:
-    #             dfs = list(nx.dfs_postorder_nodes(G, n))
-    #             conn.append(dfs)
-    #     return conn
+                isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
+                if not True in isomorph or isomorph == []:
+                    new_Graph.add_edges_from(sub.edges)
+                    exsisting_subgraph.append(subgraph)
+        # draw_graph(new_Graph)
+        return new_Graph
 
     def calculate_prop(self, G):
         property = []   
@@ -271,26 +219,18 @@ def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
    
-    # structure.property_kol = 1068
-    # X, Y = structure.ost_graph_calc() #2
-    # structure.property_kol = 698
-    # X, Y = structure.ost_without_sub_graph_calc() #3
-    structure.property_kol = 100
+
+    structure.property_kol = 200
     X, Y = structure.full_graph_calc() #1
     # ######### удаляем столбцы где все элементы одинаковые
-    X = np.unique(X, axis=1)
+    # X = np.unique(X, axis=1)
     b = X == X[0,:]
     c = b.all(axis=0)
     X = X[:,~c]
     X -= np.amin(X, axis=(0, 1))
     X /= np.amax(X, axis=(0, 1))
     X = norm_X(X)
-    X = np.round(X, 4)
-    ######### удаляем линейно зависимые строки
-    # q,r = np.linalg.qr(X)
-    # a = np.abs(np.diag(r))>=1e-10
-    # X = X[a]
-    # Y =Y[a]
+    # X = np.round(X, 4)
     write_x(X)
     # ut = ls_ut(X, Y)
     components = [5, 7, 10, 12]
@@ -300,88 +240,4 @@ def main_graph():
         y_oz, R = pls_prediction(X, Y, k)
         print(R)
         print('---')
-    # ec = ut.ErrorPLS1Classic(X, Y)
-    # for k in ec:
-    #     print(ec[k])
-    # print('---')
-    # ecr = ut.ErrorPLS1Robust(X, eY)
-    # for k in ecr:
-    #     print(ecr[k])
-    # print('---')
-    # ecv = ut.ErrorCVClassic(X, Y)
-    # for k in ecv:
-    #     print(ecv[k])
-    # print('---')
-    # ecvr = ut.ErrorCVRobust(X, Y)
-    # for k in ecvr:
-    #     print(ecvr[k])
-
-    # calc_pvalue_for_coef(X, Y, 10)
-
-    # ut.CreateTwoPlot(Y, y_oz)
 main_graph()
-# main_pls()
-
-# G1 = nx.Graph()
-# G1.add_edge(0, 1, weight=0.1)
-# G1.add_edge(0, 2, weight=1.1)
-# G1.add_edge(1, 4, weight=0.4)
-# G1.add_edge(4, 5, weight=0.3)
-
-# glist = [ nx.Graph([(0, 1), (1, 2), (1, 5), (5, 4), (2, 4), (2, 3), (4, 3), (3, 6)]), G1]
-
-# # draw_graph(glist[0])
-# # draw_graph(glist[1])
-
-# def prop(G):
-#     property = []   
-#     nodes = G.nodes
-#     # degree_sequence = [d for n, d in G.degree()]
-#     # property=degree_sequence
-#     for n in nodes:
-#         property.append(nx.degree(G, n))
-#         property.append(len(list(nx.dfs_postorder_nodes(G, n))))
-#         cycles = nx.cycle_basis(G, n)
-#         property.append(len(cycles))
-#         cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
-#         if cycle != []:
-#             property.append(max(cycle))
-#     return property
-
-# X = np.zeros((2, 28))
-# for i in range(len(glist)):
-#     property = prop(glist[i])
-#     for j in range(len(property)):
-#         X[i][j] = property[j]
-
-# f = open('first.txt', 'w')
-# for i in range(len(X)):
-#     for j in range(len(X[0])):
-#         f.write(str(X[i][j]) + '\t')
-#     f.write('\n')
-
-# X = np.round(X, 5)
-# b = X == X[0,:]
-# c = b.all(axis=0)
-# X = X[:,~c]
-
-# f = open('second.txt', 'w')
-# for i in range(len(X)):
-#     for j in range(len(X[0])):
-#         f.write(str(X[i][j]) + '\t')
-#     f.write('\n')
-
-# X = np.unique(X, axis=1)
-# f = open('third.txt', 'w')
-# for i in range(len(X)):
-#     for j in range(len(X[0])):
-#         f.write(str(X[i][j]) + '\t')
-#     f.write('\n')
-
-# mult = np.dot(X.T, X)
-# f = open('fourth.txt', 'w')
-# for i in range(len(mult)):
-#     for j in range(len(mult[0])):
-#         f.write(str(mult[i][j]) + '\t')
-#     f.write('\n')
-# print(LA.det(mult))

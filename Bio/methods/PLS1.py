@@ -19,10 +19,13 @@ class PLS1Regression():
             self.components = _components  # number of latent variable
             self.n = _X.shape[0]  # number of testing people
             self.p = _X.shape[1]  # number of properties
-            if(mode == 'robust'):
-                self.PLS1Robust()
-            else:
-                self.PLS1()
+            try:
+                if(mode == 'robust'):
+                    self.PLS1Robust()
+                else:
+                    self.PLS1()
+            except Exception:
+                raise Exception
 
 
     def Hiuber(self, x):

@@ -119,30 +119,43 @@ class GraphStructure():
         for i in range(len(self.weights)):
             self.new.append(self.anslysis_graph(self.Graphs_full[i]))
         self.Graphs_full = self.new
+        # draw_graph(self.Graphs_full[0])
                            
     
     def anslysis_graph(self, G):
         exsisting_subgraph = []
-        max = 0
         new_Graph = nx.Graph()
+        i = 0
         for n in G.nodes:
             nodes_subgraph = list(nx.dfs_edges(G, n))
             sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
             subgraph = nx.Graph(sub)
             if subgraph not in exsisting_subgraph:
                 isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
-                if not True in isomorph or isomorph == []:
-                    new_Graph.add_edges_from(sub.edges)
+                if not True in isomorph and len(nodes_subgraph) == 3:
+                    for u, v, w in sub.edges(data=True):
+                        new_Graph.add_edge(u, v, weght=w['weight'])
                     exsisting_subgraph.append(subgraph)
+                    return new_Graph
+                # if not True in isomorph and len(nodes_subgraph) == 3:
+                    # i+=1
         # draw_graph(new_Graph)
-        return new_Graph
+        # return new_Graph
 
     def calculate_prop(self, G):
-        property = []   
+        property = []
+        if G == None: 
+            return [0, 0 , 0] 
         nodes = G.nodes
         degree_sequence = [d for n, d in G.degree()]
         property=degree_sequence
         for n in nodes:
+            # v = nx.communicability_exp(G)
+            # for n in G.nodes:
+            #     for k in v[n]:
+            #         el = v[n][k]
+            #         if(el != 0):
+            #             property.append(el)
             property.append(len(list(nx.dfs_postorder_nodes(G, n))))
             cycles = nx.cycle_basis(G, n)
             property.append(len(cycles))
@@ -202,9 +215,20 @@ def write_x(X):
         row = np.asarray(row).reshape(-1)
         f.write('\t'.join([str(a) for a in row]) + '\n')
 
-
+# исправить расчет нормирования и центрирования
 
 def norm_X(X):
+    for i in range(len(X[0])):
+        arr = X[:,i]
+        d = np.var(arr)
+        sd = np.sqrt(d)
+        a = np.var(X, axis = 0)
+        for j in range(len(arr)):
+            arr[j] = arr[j] / np.sqrt(d)
+        X[:, i] = arr
+    return X
+
+def centr(X):
     for i in range(len(X[0])):
         arr = X[:,i]
         d = np.var(arr)
@@ -220,24 +244,29 @@ def main_graph():
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
    
 
-    structure.property_kol = 200
+    structure.property_kol = 18
     X, Y = structure.full_graph_calc() #1
+    ones = np.ones(72)
     # ######### удаляем столбцы где все элементы одинаковые
-    # X = np.unique(X, axis=1)
+    write_x(X)
+    X = np.unique(X, axis=1)
     b = X == X[0,:]
     c = b.all(axis=0)
     X = X[:,~c]
     X -= np.amin(X, axis=(0, 1))
     X /= np.amax(X, axis=(0, 1))
     X = norm_X(X)
+    X = np.hstack((X, np.atleast_2d(ones).T))
+    write_x(X)
     # X = np.round(X, 4)
     write_x(X)
     # ut = ls_ut(X, Y)
-    components = [5, 7, 10, 12]
+    # components = [1, 2, 3]
     print(LA.det(np.dot(X.T, X)))
-    # # print(LA.eig(np.dot(X.T, X)))
-    for k in components:
-        y_oz, R = pls_prediction(X, Y, k)
-        print(R)
-        print('---')
+    ols_prediction(X, Y)
+    # print(LA.eig(np.dot(X.T, X)))
+    # for k in components:
+        # y_oz, R = pls_prediction(X, Y, k)
+        # print(R)
+    #     print('---')
 main_graph()

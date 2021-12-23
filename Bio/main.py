@@ -114,29 +114,64 @@ class GraphStructure():
         return Graph
 
     def creat_full_value_graph(self):
-        for i in range(len(self.weights)):
+        n = len(self.weights)
+        for i in range(n):
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
-        for i in range(len(self.weights)):
-            self.new.append(self.anslysis_graph(self.Graphs_full[i]))
+        for i in range(n):
+            conn = self.anslysis_graph(self.Graphs_full[i])
+            self.connection_nodes.append(conn)
+        self.filter()
+        for i in range(len(self.Graphs_full)):
+            self.new.append(self.new_graph(self.Graphs_full[i], i) )
         self.Graphs_full = self.new
-        # draw_graph(self.Graphs_full[0])
-                           
-    
-    def anslysis_graph(self, G):
-        exsisting_subgraph = []
-        new_Graph = nx.Graph()
+        draw_graph(self.Graphs_full[0])
+
+    def filter(self):
         i = 0
+        n = len(self.weights)
+        while i < n:
+            if self.connection_nodes[i] == None:
+                self.connection_nodes.remove(self.connection_nodes[i])
+                self.Graphs_full.remove(self.Graphs_full[i])
+                self.surv_time.remove(self.surv_time[i])
+                n -= 1
+                continue
+            i += 1
+
+    def new_graph(self, G, i):
+        Graph = nx.Graph()
+        connection = self.connection_nodes[i]
+        for edge in connection:
+            Graph.add_edge(edge[0], edge[1])
+        # draw_graph(Graph)
+        return Graph
+
+    def anslysis_graph(self, G):
+        conn = []
+        k = 0
         for n in G.nodes:
-            nodes_subgraph = list(nx.dfs_edges(G, n))
-            sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
-            subgraph = nx.Graph(sub)
-            if subgraph not in exsisting_subgraph:
-                isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
-                if not True in isomorph and len(nodes_subgraph) == 3:
-                    for u, v, w in sub.edges(data=True):
-                        new_Graph.add_edge(u, v, weght=w['weight'])
-                    exsisting_subgraph.append(subgraph)
-                    return new_Graph
+            a = len(list(nx.dfs_edges(G, n)))
+            if a == 6:
+                dfs = list(nx.dfs_edges(G, n))
+                conn = dfs
+                return conn
+        return None                   
+    
+    # def anslysis_graph(self, G):
+    #     exsisting_subgraph = []
+    #     new_Graph = nx.Graph()
+    #     i = 0
+    #     for n in G.nodes:
+    #         nodes_subgraph = list(nx.dfs_edges(G, n))
+    #         sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
+    #         subgraph = nx.Graph(sub)
+    #         if subgraph not in exsisting_subgraph:
+    #             isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
+    #             if not True in isomorph and len(nodes_subgraph) == 3:
+    #                 for u, v, w in sub.edges(data=True):
+    #                     new_Graph.add_edge(u, v, weght=w['weight'])
+    #                 exsisting_subgraph.append(subgraph)
+    #                 return new_Graph
                 # if not True in isomorph and len(nodes_subgraph) == 3:
                     # i+=1
         # draw_graph(new_Graph)
@@ -150,12 +185,6 @@ class GraphStructure():
         degree_sequence = [d for n, d in G.degree()]
         property=degree_sequence
         for n in nodes:
-            # v = nx.communicability_exp(G)
-            # for n in G.nodes:
-            #     for k in v[n]:
-            #         el = v[n][k]
-            #         if(el != 0):
-            #             property.append(el)
             property.append(len(list(nx.dfs_postorder_nodes(G, n))))
             cycles = nx.cycle_basis(G, n)
             property.append(len(cycles))
@@ -166,8 +195,8 @@ class GraphStructure():
 
     
     def create_x_matrix_full(self):
-        X = np.zeros((len(self.weights), self.property_kol))
-        for i in range(len(self.weights)):
+        X = np.zeros((len(self.Graphs_full), self.property_kol))
+        for i in range(len(self.Graphs_full)):
             prop = self.calculate_prop(self.Graphs_full[i])
             for j in range(len(prop)):
                 X[i][j] = prop[j]
@@ -218,25 +247,30 @@ def write_x(X):
 # исправить расчет нормирования и центрирования
 
 def norm_X(X):
+    sd = []
     for i in range(len(X[0])):
         arr = X[:,i]
         d = np.var(arr)
-        sd = np.sqrt(d)
-        a = np.var(X, axis = 0)
-        for j in range(len(arr)):
-            arr[j] = arr[j] / np.sqrt(d)
-        X[:, i] = arr
-    return X
+        sd.append(np.sqrt(d))
+    return sd
 
 def centr(X):
+    m = []
     for i in range(len(X[0])):
         arr = X[:,i]
-        d = np.var(arr)
-        a = np.var(X, axis = 0)
-        for j in range(len(arr)):
-            arr[j] = arr[j] / np.sqrt(d)
-        X[:, i] = arr
+        sum = arr.sum()
+        m.append(arr.sum() / len(arr))
+    return m
+
+def centr_norm(X):
+    m = centr(X)
+    sd = norm_X(X)
+    for i in range(len(X)):
+        for j in range(len(X[0])):
+            X[i][j] = (X[i][j] - m[j])/ sd[j]
     return X
+
+
 
 
 def main_graph():
@@ -244,29 +278,24 @@ def main_graph():
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
    
 
-    structure.property_kol = 18
+    structure.property_kol = 70
     X, Y = structure.full_graph_calc() #1
-    ones = np.ones(72)
+    ones = np.ones(len(structure.Graphs_full))
     # ######### удаляем столбцы где все элементы одинаковые
-    write_x(X)
     X = np.unique(X, axis=1)
     b = X == X[0,:]
     c = b.all(axis=0)
     X = X[:,~c]
-    X -= np.amin(X, axis=(0, 1))
-    X /= np.amax(X, axis=(0, 1))
-    X = norm_X(X)
+    write_x(X)
+    X = centr_norm(X)
     X = np.hstack((X, np.atleast_2d(ones).T))
     write_x(X)
-    # X = np.round(X, 4)
-    write_x(X)
-    # ut = ls_ut(X, Y)
-    # components = [1, 2, 3]
     print(LA.det(np.dot(X.T, X)))
     ols_prediction(X, Y)
+    # components = [1, 2, 3]
     # print(LA.eig(np.dot(X.T, X)))
     # for k in components:
-        # y_oz, R = pls_prediction(X, Y, k)
-        # print(R)
+    #     y_oz, R = pls_prediction(X, Y, k)
+    #     print(R)
     #     print('---')
 main_graph()

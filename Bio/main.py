@@ -118,13 +118,9 @@ class GraphStructure():
         for i in range(n):
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
         for i in range(n):
-            conn = self.anslysis_graph(self.Graphs_full[i])
-            self.connection_nodes.append(conn)
-        self.filter()
-        for i in range(len(self.Graphs_full)):
-            self.new.append(self.new_graph(self.Graphs_full[i], i) )
-        self.Graphs_full = self.new
-        draw_graph(self.Graphs_full[0])
+            self.Graphs_full[i] = self.uniq_subgraphs(self.Graphs_full[i])
+        # draw_graph(self.Graphs_full[5])
+        # draw_graph(self.Graphs_full[0])
 
     def filter(self):
         i = 0
@@ -136,46 +132,22 @@ class GraphStructure():
                 self.surv_time.remove(self.surv_time[i])
                 n -= 1
                 continue
-            i += 1
-
-    def new_graph(self, G, i):
-        Graph = nx.Graph()
-        connection = self.connection_nodes[i]
-        for edge in connection:
-            Graph.add_edge(edge[0], edge[1])
-        # draw_graph(Graph)
-        return Graph
-
-    def anslysis_graph(self, G):
-        conn = []
-        k = 0
-        for n in G.nodes:
-            a = len(list(nx.dfs_edges(G, n)))
-            if a == 6:
-                dfs = list(nx.dfs_edges(G, n))
-                conn = dfs
-                return conn
-        return None                   
+            i += 1                  
     
-    # def anslysis_graph(self, G):
-    #     exsisting_subgraph = []
-    #     new_Graph = nx.Graph()
-    #     i = 0
-    #     for n in G.nodes:
-    #         nodes_subgraph = list(nx.dfs_edges(G, n))
-    #         sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
-    #         subgraph = nx.Graph(sub)
-    #         if subgraph not in exsisting_subgraph:
-    #             isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
-    #             if not True in isomorph and len(nodes_subgraph) == 3:
-    #                 for u, v, w in sub.edges(data=True):
-    #                     new_Graph.add_edge(u, v, weght=w['weight'])
-    #                 exsisting_subgraph.append(subgraph)
-    #                 return new_Graph
-                # if not True in isomorph and len(nodes_subgraph) == 3:
-                    # i+=1
-        # draw_graph(new_Graph)
-        # return new_Graph
+    def uniq_subgraphs(self, G):
+        exsisting_subgraph = []
+        new_Graph = nx.Graph()
+        for n in G.nodes:
+            nodes_subgraph = list(nx.dfs_edges(G, n))
+            sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
+            subgraph = nx.Graph(sub)
+            if subgraph not in exsisting_subgraph:
+                isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
+                if not True in isomorph and len(nodes_subgraph) != 4:
+                    for u, v, w in sub.edges(data=True):
+                        new_Graph.add_edge(u, v, weght=w['weight'])
+                    exsisting_subgraph.append(subgraph)
+        return new_Graph
 
     def calculate_prop(self, G):
         property = []
@@ -185,7 +157,7 @@ class GraphStructure():
         degree_sequence = [d for n, d in G.degree()]
         property=degree_sequence
         for n in nodes:
-            property.append(len(list(nx.dfs_postorder_nodes(G, n))))
+            # property.append(len(list(nx.dfs_postorder_nodes(G, n))))
             cycles = nx.cycle_basis(G, n)
             property.append(len(cycles))
             cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
@@ -271,31 +243,31 @@ def centr_norm(X):
     return X
 
 
-
-
-def main_graph():
-    structure = GraphStructure()
-    structure.calculate_main_values('BioProject/Bio/graph_value.csv')
-   
-
-    structure.property_kol = 70
-    X, Y = structure.full_graph_calc() #1
-    ones = np.ones(len(structure.Graphs_full))
-    # ######### удаляем столбцы где все элементы одинаковые
+def uniq(X):
     X = np.unique(X, axis=1)
     b = X == X[0,:]
     c = b.all(axis=0)
     X = X[:,~c]
     write_x(X)
+    return X
+
+
+def main_graph():
+    structure = GraphStructure()
+    structure.calculate_main_values('BioProject/Bio/graph_value.csv')
+    structure.property_kol = 200
+    X, Y = structure.full_graph_calc() #1
+    ones = np.ones(len(structure.Graphs_full))
+    X = uniq(X)
     X = centr_norm(X)
     X = np.hstack((X, np.atleast_2d(ones).T))
-    write_x(X)
+    # write_x(X)
     print(LA.det(np.dot(X.T, X)))
     ols_prediction(X, Y)
-    # components = [1, 2, 3]
+    components = [10, 15, 24]
     # print(LA.eig(np.dot(X.T, X)))
-    # for k in components:
-    #     y_oz, R = pls_prediction(X, Y, k)
-    #     print(R)
-    #     print('---')
+    for k in components:
+        y_oz, R = pls_prediction(X, Y, k)
+        print(R)
+        print('---')
 main_graph()

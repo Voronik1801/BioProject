@@ -1,4 +1,6 @@
 import csv
+from ctypes import util
+import re
 from networkx.algorithms.isomorphism import isomorph
 from networkx.algorithms.shortest_paths import weighted
 from networkx.classes.function import degree
@@ -23,7 +25,8 @@ from itertools import groupby
 from networkx.algorithms import approximation as approx
 
 components = [5]
-
+df = pd.DataFrame()
+res_df = pd.DataFrame()
 
 def random_value():
     value = random.randint(0, 71)
@@ -119,7 +122,7 @@ class GraphStructure():
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
         for i in range(n):
             self.Graphs_full[i] = self.uniq_subgraphs(self.Graphs_full[i])
-        # draw_graph(self.Graphs_full[5])
+        draw_graph(self.Graphs_full[5])
         # draw_graph(self.Graphs_full[0])
 
     def filter(self):
@@ -143,26 +146,67 @@ class GraphStructure():
             subgraph = nx.Graph(sub)
             if subgraph not in exsisting_subgraph:
                 isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
-                if not True in isomorph and len(nodes_subgraph) != 4:
+                if not True in isomorph:
                     for u, v, w in sub.edges(data=True):
                         new_Graph.add_edge(u, v, weght=w['weight'])
                     exsisting_subgraph.append(subgraph)
+                    break
         return new_Graph
+
+    # def uniq_subgraphs(self, G):
+    #     exsisting_subgraph = []
+    #     new_Graph = nx.Graph()
+    #     for n in G.nodes:
+    #         nodes_subgraph = list(nx.dfs_edges(G, n))
+    #         sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
+    #         subgraph = nx.Graph(sub)
+    #         if subgraph not in exsisting_subgraph:
+    #             isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
+    #             if not True in isomorph:
+    #                 for u, v, w in sub.edges(data=True):
+    #                     new_Graph.add_edge(u, v, weght=w['weight'])
+    #                 exsisting_subgraph.append(subgraph)
+    #                 break
+    #     return new_Graph
+
+    # def uniq_subgraphs(self, G):
+    #     exsisting_subgraph = []
+    #     new_Graph = nx.Graph()
+    #     conn = self.anslysis_graph(G)
+    #     for node in conn:
+    #         a = list(G.edges)
+    #         for n in a:
+    #             if node in n:
+    #                 n = list(n)
+    #                 new_Graph.add_edge(n[0], n[1])
+    #     return new_Graph
+    
+    def anslysis_graph(self, G):
+        k = 0
+        for n in G.nodes:
+            a = len(list(nx.dfs_postorder_nodes(G, n)))
+            if a == 3:
+                conn = list(nx.dfs_postorder_nodes(G, n))
+                break
+        return conn
 
     def calculate_prop(self, G):
         property = []
         if G == None: 
             return [0, 0 , 0] 
         nodes = G.nodes
-        degree_sequence = [d for n, d in G.degree()]
-        property=degree_sequence
+        # degree_sequence = [d for n, d in G.degree()]
+        # property=degree_sequence
         for n in nodes:
-            # property.append(len(list(nx.dfs_postorder_nodes(G, n))))
+            property.append(G.degree[n])
+            property.append(len(list(nx.dfs_postorder_nodes(G, n))))
             cycles = nx.cycle_basis(G, n)
             property.append(len(cycles))
             cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
             if cycle != []:
                 property.append(max(cycle))
+            else:
+                property.append(0)
         return property
 
     
@@ -251,23 +295,82 @@ def uniq(X):
     write_x(X)
     return X
 
+def cross_validation(X, Y):
+    resultCV = np.zeros(X.shape[0])
+    for i in range(X.shape[0]):
+        beginX = X
+        predictX = X[i]
+        beginY = Y
+        beginX = np.delete(beginX, [i], 0)
+        beginY = np.delete(beginY, [i], 0)
+        est = sm.OLS(Y, X).fit()
+        predictYpred = est.predict(predictX.reshape(1, -1))
+        resultCV[i] = predictYpred
+    return resultCV
+
+def error(y, y_oz):
+    dif = (y - y_oz) ** 2
+    scal = np.sum(dif)
+    err = np.sqrt(scal) / 72
+    return err
 
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
-    structure.property_kol = 200
+    structure.property_kol = 20
     X, Y = structure.full_graph_calc() #1
+    i = 0
+    while True:
+        if i == structure.property_kol:
+            break
+        else:
+            df[f'degree{i}'] = X[:, i]
+            i += 1
+        if i == structure.property_kol:
+            break
+        else:
+            df[f'len dfs{i}'] = X[:, i]
+            i += 1
+        if i == structure.property_kol:
+            break
+        else:
+            df[f'len cycle{i}'] = X[:, i]
+            i += 1
+        if i == structure.property_kol:
+            break
+        else:
+            df[f'max cycle{i}'] = X[:, i]
+            i += 1
+    print(df)
+    write_x(X)
     ones = np.ones(len(structure.Graphs_full))
     X = uniq(X)
+    for i in range(structure.property_kol):
+        for j in range(len(X[0])):
+            if X[:, j] == df[f'degree{i}']:
+                res_df[f'degree{i}'] = df[f'degree{i}'] 
+            if X[:, j] == df[f'len dfs{i}']:
+                res_df[f'len dfs{i}'] = df[f'len dfs{i}']
+            if X[:, j] == df[f'len cycle{i}']:
+                res_df[f'len cycle{i}'] = df[f'len cycle{i}']
+            if X[:, j] == df[f'max cycle{i}']:
+                res_df[f'max cycle{i}'] = df[f'max cycle{i}']
+    print(res_df)
     X = centr_norm(X)
     X = np.hstack((X, np.atleast_2d(ones).T))
-    # write_x(X)
+    write_x(X)
+    X = np.linalg.qr(X)[0]
     print(LA.det(np.dot(X.T, X)))
     ols_prediction(X, Y)
-    components = [10, 15, 24]
-    # print(LA.eig(np.dot(X.T, X)))
-    for k in components:
-        y_oz, R = pls_prediction(X, Y, k)
-        print(R)
-        print('---')
+    # components = [2, 3, 4]
+    # # print(LA.eig(np.dot(X.T, X)))
+    # for k in components:
+    #     y_oz, R = pls_prediction(X, Y, k)
+    #     print(R)
+    #     print('---')
+    utils = ls_ut(X, Y)
+    cv = cross_validation(X, Y)
+    utils.CreateTwoPlot(Y, cv)
+    print(error(Y, cv))
+
 main_graph()

@@ -121,21 +121,66 @@ class GraphStructure():
         for i in range(n):
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
         for i in range(n):
-            self.Graphs_full[i] = self.uniq_subgraphs(self.Graphs_full[i])
-        draw_graph(self.Graphs_full[5])
+            adj_matrix = nx.adjacency_matrix(self.Graphs_full[i])
+            print(adj_matrix)
+            # self.Graphs_full[i] = self.uniq_subgraphs(self.Graphs_full[i])
+        # draw_graph(self.Graphs_full[5])
         # draw_graph(self.Graphs_full[0])
 
-    def filter(self):
-        i = 0
-        n = len(self.weights)
-        while i < n:
-            if self.connection_nodes[i] == None:
-                self.connection_nodes.remove(self.connection_nodes[i])
-                self.Graphs_full.remove(self.Graphs_full[i])
-                self.surv_time.remove(self.surv_time[i])
-                n -= 1
-                continue
-            i += 1                  
+    # def creat_full_value_graph(self):
+    #     n = len(self.weights)
+    #     for i in range(n):
+    #         self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
+    #     for i in range(n):
+    #         conn = self.anslysis_graph(self.Graphs_full[i])
+    #         self.connection_nodes.append(conn)
+    #     self.filter()
+    #     for i in range(len(self.Graphs_full)):
+    #         self.new.append(self.new_graph(self.Graphs_full[i], i) )
+    #     self.Graphs_full = self.new
+    #     # draw_graph(self.Graphs_full[0])
+
+    # def filter(self):
+    #     i = 0
+    #     n = len(self.weights)
+    #     while i < n:
+    #         if self.connection_nodes[i] == None:
+    #             self.connection_nodes.remove(self.connection_nodes[i])
+    #             self.Graphs_full.remove(self.Graphs_full[i])
+    #             self.surv_time.remove(self.surv_time[i])
+    #             n -= 1
+    #             continue
+    #         i += 1
+
+    # def new_graph(self, G, i):
+    #     Graph = nx.Graph()
+    #     connection = self.connection_nodes[i]
+    #     for edge in connection:
+    #         Graph.add_edge(edge[0], edge[1])
+    #     # draw_graph(Graph)
+    #     return Graph
+
+    # def anslysis_graph(self, G):
+    #     conn = []
+    #     for n in G.nodes:
+    #         a = len(list(nx.dfs_edges(G, n)))
+    #         if a == 6:
+    #             dfs = list(nx.dfs_edges(G, n))
+    #             conn = dfs
+    #             return conn
+    #     return None                   
+
+    # def filter(self):
+    #     i = 0
+    #     n = len(self.weights)
+    #     while i < n:
+    #         if self.connection_nodes[i] == None:
+    #             self.connection_nodes.remove(self.connection_nodes[i])
+    #             self.Graphs_full.remove(self.Graphs_full[i])
+    #             self.surv_time.remove(self.surv_time[i])
+    #             n -= 1
+    #             continue
+    #         i += 1                  
     
     def uniq_subgraphs(self, G):
         exsisting_subgraph = []
@@ -150,7 +195,6 @@ class GraphStructure():
                     for u, v, w in sub.edges(data=True):
                         new_Graph.add_edge(u, v, weght=w['weight'])
                     exsisting_subgraph.append(subgraph)
-                    break
         return new_Graph
 
     # def uniq_subgraphs(self, G):
@@ -180,33 +224,25 @@ class GraphStructure():
     #                 n = list(n)
     #                 new_Graph.add_edge(n[0], n[1])
     #     return new_Graph
-    
-    def anslysis_graph(self, G):
-        k = 0
-        for n in G.nodes:
-            a = len(list(nx.dfs_postorder_nodes(G, n)))
-            if a == 3:
-                conn = list(nx.dfs_postorder_nodes(G, n))
-                break
-        return conn
 
     def calculate_prop(self, G):
         property = []
-        if G == None: 
-            return [0, 0 , 0] 
-        nodes = G.nodes
-        # degree_sequence = [d for n, d in G.degree()]
-        # property=degree_sequence
-        for n in nodes:
-            property.append(G.degree[n])
-            property.append(len(list(nx.dfs_postorder_nodes(G, n))))
-            cycles = nx.cycle_basis(G, n)
-            property.append(len(cycles))
-            cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
-            if cycle != []:
-                property.append(max(cycle))
-            else:
-                property.append(0)
+        # if G == None: 
+        #     return [0, 0 , 0] 
+        # nodes = G.nodes
+        # # degree_sequence = [d for n, d in G.degree()]
+        # # property=degree_sequence
+        # for n in nodes:
+        #     property.append(G.degree[n])
+        #     property.append(len(list(nx.dfs_postorder_nodes(G, n))))
+        #     cycles = nx.cycle_basis(G, n)
+        #     property.append(len(cycles))
+        #     cycle = sorted([len(c) for c in nx.cycle_basis(G, n)])
+        #     if cycle != []:
+        #         property.append(max(cycle))
+        #     else:
+        #         property.append(0)
+        property = nx.adj_matrix(G)
         return property
 
     
@@ -317,7 +353,7 @@ def error(y, y_oz):
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
-    structure.property_kol = 20
+    structure.property_kol = 200
     X, Y = structure.full_graph_calc() #1
     i = 0
     while True:
@@ -341,21 +377,37 @@ def main_graph():
         else:
             df[f'max cycle{i}'] = X[:, i]
             i += 1
-    print(df)
+    # print(df)
+    X = uniq(X)
     write_x(X)
     ones = np.ones(len(structure.Graphs_full))
-    X = uniq(X)
     for i in range(structure.property_kol):
         for j in range(len(X[0])):
-            if X[:, j] == df[f'degree{i}']:
-                res_df[f'degree{i}'] = df[f'degree{i}'] 
-            if X[:, j] == df[f'len dfs{i}']:
-                res_df[f'len dfs{i}'] = df[f'len dfs{i}']
-            if X[:, j] == df[f'len cycle{i}']:
-                res_df[f'len cycle{i}'] = df[f'len cycle{i}']
-            if X[:, j] == df[f'max cycle{i}']:
-                res_df[f'max cycle{i}'] = df[f'max cycle{i}']
-    print(res_df)
+            try:
+                if (X[:, j] == df[f'degree{i}'].values).all():
+                    res_df[f'degree{i}'] = df[f'degree{i}'].values
+                    break
+            except:
+                pass
+            try:
+                if (X[:, j] == df[f'len dfs{i}'].values).all():
+                    res_df[f'len dfs{i}'] = df[f'len dfs{i}'].values
+                    break
+            except:
+                pass
+            try:
+                if (X[:, j] == df[f'len cycle{i}'].values).all():
+                    res_df[f'len cycle{i}'] = df[f'len cycle{i}'].values
+                    break
+            except:
+                pass
+            try:
+                if (X[:, j] == df[f'max cycle{i}'].values).all():
+                    res_df[f'max cycle{i}'] = df[f'max cycle{i}'].values
+                    break
+            except:
+                pass
+    print(res_df.columns)
     X = centr_norm(X)
     X = np.hstack((X, np.atleast_2d(ones).T))
     write_x(X)

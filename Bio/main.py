@@ -87,7 +87,7 @@ class GraphStructure():
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
         for i in range(n):
             self.Graphs_full[i] = self.uniq_subgraphs(self.Graphs_full[i])
-        draw_graph(self.Graphs_full[0])
+        # draw_graph(self.Graphs_full[0])
 
     # def uniq_subgraphs(self, G):
     #     exsisting_subgraph = []
@@ -106,6 +106,7 @@ class GraphStructure():
     #     return new_Graph
     def anslysis_graph(self, G):
         k = 0
+        conn = None
         for n in G.nodes:
             a = len(list(nx.dfs_postorder_nodes(G, n)))
             if a == 3:
@@ -117,17 +118,22 @@ class GraphStructure():
         exsisting_subgraph = []
         new_Graph = nx.Graph()
         conn = self.anslysis_graph(G)
-        for node in conn:
-            a = list(G.edges(data=True))
-            for n in a:
-                if node in n:
-                    n = list(n)
-                    new_Graph.add_edge(n[0], n[1], weight=n[2]['weight'])
+        if conn == None:
+            new_Graph.add_edge(0,0, weight=0)
+        else:
+            for node in conn:
+                a = list(G.edges(data=True))
+                for n in a:
+                    if node in n:
+                        n = list(n)
+                        new_Graph.add_edge(n[0], n[1], weight=n[2]['weight'])
         return new_Graph
 
     def calculate_prop(self, G):
         property = []
-        det_adj = LA.det(nx.adj_matrix(G))
+        adj = nx.adjacency_matrix(G)
+        det_adj = LA.det(adj.todense())
+        property.append(det_adj)
         return property
 
     
@@ -238,14 +244,14 @@ def error(y, y_oz):
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('D:\Diplom\BioProject\Bio\graph_value.csv')
-    structure.property_kol = 200
+    structure.property_kol = 1
     X, Y = structure.full_graph_calc() #1
-    X = uniq(X)
     write_x(X)
-    ones = np.ones(len(structure.Graphs_full))
-    X = centr_norm(X)
-    X = np.hstack((X, np.atleast_2d(ones).T))
-    write_x(X)
+    # X = uniq(X)
+    # ones = np.ones(len(structure.Graphs_full))
+    # X = centr_norm(X)
+    # X = np.hstack((X, np.atleast_2d(ones).T))
+    # write_x(X)
     # X = np.linalg.qr(X)[0]
     print(LA.det(np.dot(X.T, X)))
     # ols_prediction(X, Y)

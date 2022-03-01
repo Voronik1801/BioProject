@@ -56,9 +56,12 @@ class GraphStructure():
         self.Graph_ost_wo = []
         self.Graph_ost = []
         self.surv_time = []
-        self.property_kol = 0
+        self.property_kol = 200
         self.connection_nodes = []
         self.new = []
+        self.property = [0] * 72
+        for i in range(72):
+            self.property[i] = [0] * 1
     
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
@@ -87,62 +90,110 @@ class GraphStructure():
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
         for i in range(n):
             self.Graphs_full[i] = self.uniq_subgraphs(self.Graphs_full[i])
-        # draw_graph(self.Graphs_full[0])
+        # draw_graph(self.Graphs_full[0][0])
 
-    # def uniq_subgraphs(self, G):
-    #     exsisting_subgraph = []
-    #     new_Graph = nx.Graph()
-    #     for n in G.nodes:
-    #         nodes_subgraph = list(nx.dfs_edges(G, n))
-    #         sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
-    #         subgraph = nx.Graph(sub)
-    #         if subgraph not in exsisting_subgraph:
-    #             isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
-    #             if not True in isomorph and len(nodes_subgraph) == 3:
-    #                 for u, v, w in sub.edges(data=True):
-    #                     new_Graph.add_edge(u, v, weght=w['weight'])
-    #                     break
-    #                 exsisting_subgraph.append(subgraph)
-    #     return new_Graph
+    def uniq_subgraphs(self, G):
+        exsisting_subgraph = []
+        graphs = []
+        for n in G.nodes:
+            nodes_subgraph = list(nx.dfs_edges(G, n))
+            sub = nx.classes.function.edge_subgraph(G, nodes_subgraph)
+            subgraph = nx.Graph(sub)
+            if subgraph not in exsisting_subgraph:
+                isomorph = [nx.is_isomorphic(subgraph, exs_subgr) for exs_subgr in exsisting_subgraph]
+                if not True in isomorph:
+                    new_Graph = nx.Graph()
+                    for u, v, w in sub.edges(data=True):
+                        new_Graph.add_edge(u, v, weight=w['weight'])
+                    graphs.append(new_Graph)
+                    exsisting_subgraph.append(subgraph)
+        return graphs
+
     def anslysis_graph(self, G):
         k = 0
         conn = None
         for n in G.nodes:
-            a = len(list(nx.dfs_postorder_nodes(G, n)))
-            if a == 3:
+            k = list(nx.dfs_postorder_nodes(G, n))
+            a = len(k)
+            if a == 7:
                 conn = list(nx.dfs_postorder_nodes(G, n))
                 break
         return conn
 
-    def uniq_subgraphs(self, G):
-        exsisting_subgraph = []
-        new_Graph = nx.Graph()
-        conn = self.anslysis_graph(G)
-        if conn == None:
-            new_Graph.add_edge(0,0, weight=0)
-        else:
-            for node in conn:
-                a = list(G.edges(data=True))
-                for n in a:
-                    if node in n:
-                        n = list(n)
-                        new_Graph.add_edge(n[0], n[1], weight=n[2]['weight'])
-        return new_Graph
+    # def uniq_subgraphs(self, G):
+    #     exsisting_subgraph = []
+    #     new_Graph = nx.Graph()
+    #     conn = self.anslysis_graph(G)
+    #     if conn == None:
+    #         new_Graph.add_edge(0,0, weight=0)
+    #     else:
+    #         for node in conn:
+    #             a = list(G.edges(data=True))
+    #             for n in a:
+    #                 if node in n:
+    #                     n = list(n)
+    #                     new_Graph.add_edge(n[0], n[1], weight=n[2]['weight'])
+    #     return new_Graph
 
-    def calculate_prop(self, G):
-        property = []
+    def shortest_path(self, G, source, target):
+        def path_cost(G, path):
+            return sum([G[path[i]][path[i+1]]['weight'] for i in range(len(path)-1)])
+        try:
+            x = nx.shortest_simple_paths(G, source,target,weight='weight')
+            par = sorted([(path_cost(G,p), p) for p in x])
+        except: 
+            return 0
+        return par[0][0]
+
+    def longest_path(self, G):
+        def path_cost(G, path):
+            x = [G[path[i]][path[i+1]]['weight'] for i in range(len(path)-1)]
+            return sum(x)
+        try:
+            par = (path_cost(G,nx.dag_longest_path(G)), nx.dag_longest_path(G))
+        except:
+            return 0
+        return par[0]
+
+    def calculate_prop(self, G, i):
+        # Определитель матрицы смежности с весами
         adj = nx.adjacency_matrix(G)
         det_adj = LA.det(adj.todense())
-        property.append(det_adj)
-        return property
+        self.property[i].append(det_adj)
+
+        # Определитель матрицы Лапласа L=D-A
+        # l = nx.laplacian_matrix(G)
+        # property.append(LA.det(l.todense()))
+
+        # Сумма всех путей в графе
+        sum = 0
+        a = list(G.edges(data=True))
+        for j in a:
+            sum += j[2]['weight']
+        self.property[i].append(sum)
+
+        # Длина самого короткого пути от первой до последней вершины в графе
+        dfs = list(nx.dfs_preorder_nodes(G))
+        path = 20
+        for d in dfs:
+            short = self.shortest_path(G, dfs[0], d)
+            if short < path and short != 0:
+                path = short
+        if path == 20:
+            path = 0
+        self.property[i].append(path)
+
+        # Longest path (critical)
+        # self.property.append(self.longest_path(G))
 
     
     def create_x_matrix_full(self):
         X = np.zeros((len(self.Graphs_full), self.property_kol))
         for i in range(len(self.Graphs_full)):
-            prop = self.calculate_prop(self.Graphs_full[i])
-            for j in range(len(prop)):
-                X[i][j] = prop[j]
+            for k in range(len(self.Graphs_full[i])):
+                self.calculate_prop(self.Graphs_full[i][k], i)
+            for j in range(len(self.property[i])):
+                X[i][j] = self.property[i][j]
         return X
 
 
@@ -178,8 +229,8 @@ def pls_prediction(X, Y, comp, method='classic'):
     R = r2_score(Y, y_oz)
     return y_oz, R
 
-def write_x(X):
-    f = open('result_graph_X.txt', 'w')
+def write_x(X, file='result_graph_X.txt'):
+    f = open(file, 'w')
     # for i in range(len(X)):
     #     for j in range(len(X[0])):
     #         f.write(str(X[i][j]) + '\t')
@@ -244,17 +295,19 @@ def error(y, y_oz):
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('D:\Diplom\BioProject\Bio\graph_value.csv')
-    structure.property_kol = 1
+    structure.property_kol = 40
     X, Y = structure.full_graph_calc() #1
+    X = uniq(X)
+    write_x(X, file='pre_x.txt')
+    print(LA.det(np.dot(X.T, X)))
+    X = centr_norm(X)
+    ones = np.ones(len(structure.Graphs_full))
+    X = np.hstack((X, np.atleast_2d(ones).T))
     write_x(X)
-    # X = uniq(X)
-    # ones = np.ones(len(structure.Graphs_full))
-    # X = centr_norm(X)
-    # X = np.hstack((X, np.atleast_2d(ones).T))
-    # write_x(X)
+
     # X = np.linalg.qr(X)[0]
     print(LA.det(np.dot(X.T, X)))
-    # ols_prediction(X, Y)
+    ols_prediction(X, Y)
     # components = [2, 3, 4]
     # # print(LA.eig(np.dot(X.T, X)))
     # for k in components:

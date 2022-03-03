@@ -217,10 +217,33 @@ def pls_prediction_lib(X, Y, comp):
     R = regression.score(X, Y)
     return y_oz, R
 
+def analysis_pVal(est, X, Y):
+    sigLevel = 0.05
+    max = 0
+    pVals = est.pvalues
+    delete_index = 0
+    while True:
+        for i in range(len(pVals)):
+            if pVals[i] > max:
+                max = pVals[i]
+                delete_index = i
+        if pVals[delete_index] > sigLevel:
+            print(pVals[delete_index])
+            print(delete_index+1)
+            X = np.delete(X, [delete_index], axis=1)
+            est = sm.OLS(Y, X).fit()
+            y_oz = est.predict(X)
+            print(est.summary())
+            pVals = est.pvalues
+            max = 0
+
+
+
 def ols_prediction(X,Y):
     est = sm.OLS(Y, X).fit()
     y_oz = est.predict(X)
     print(est.summary())
+    analysis_pVal(est, X, Y)
     return y_oz
 
 def pls_prediction(X, Y, comp, method='classic'):
@@ -294,7 +317,7 @@ def error(y, y_oz):
 
 def main_graph():
     structure = GraphStructure()
-    structure.calculate_main_values('D:\Diplom\BioProject\Bio\graph_value.csv')
+    structure.calculate_main_values('BioProject/Bio/graph_value.csv')
     structure.property_kol = 40
     X, Y = structure.full_graph_calc() #1
     X = uniq(X)

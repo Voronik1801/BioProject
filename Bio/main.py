@@ -26,7 +26,7 @@ def draw_graph(G):
         'node_size': 15,
         'width': 0.5,
     }
-    # nx.draw(G, cmap = plt.get_cmap('jet'),node_color='red',with_labels=True) 
+    # nx.draw(G, cmap = plt.get_cmap('jet'),node_color='red',with_lables=True) 
     nx.draw(G, **options) 
     plt.show()
 
@@ -97,16 +97,16 @@ class GraphStructure():
                     exsisting_subgraph.append(subgraph)
         return graphs
 
-    def anslysis_graph(self, G):
-        k = 0
-        conn = None
-        for n in G.nodes:
-            k = list(nx.dfs_postorder_nodes(G, n))
-            a = len(k)
-            if a == 7:
-                conn = list(nx.dfs_postorder_nodes(G, n))
-                break
-        return conn
+    # def anslysis_graph(self, G):
+    #     k = 0
+    #     conn = None
+    #     for n in G.nodes:
+    #         k = list(nx.dfs_postorder_nodes(G, n))
+    #         a = len(k)
+    #         if a == 7:
+    #             conn = list(nx.dfs_postorder_nodes(G, n))
+    #             break
+    #     return conn
 
     # def uniq_subgraphs(self, G):
     #     exsisting_subgraph = []
@@ -145,12 +145,30 @@ class GraphStructure():
 
     def calculate_prop(self, G, i):
         count_nodes = len(G.nodes)
+        columns = self.X.columns
+
+        lable1 = f'det_{count_nodes}'
+        while lable1 in columns and self.X[lable1][i] != 0:
+            lable1 = lable1 + '_an'
+
+        lable2 = f'sum_{count_nodes}'
+        while lable2 in columns and self.X[lable2][i] != 0:
+            lable2 += '_an'
+
+        lable3 = f'short_{count_nodes}'
+        while lable3 in columns and self.X[lable3][i] != 0:
+            lable3 += '_an'
+
+
+
 
         # Определитель матрицы смежности с весами
         adj = nx.adjacency_matrix(G)
         det_adj = LA.det(adj.todense())
         self.property[i].append(det_adj)
-        self.X[f'det_{count_nodes}'] = det_adj
+        if lable1 not in self.X.columns:
+            self.X[lable1] = np.zeros(72)
+        self.X[lable1][i] = det_adj
 
         # Определитель матрицы Лапласа L=D-A
         # l = nx.laplacian_matrix(G)
@@ -162,7 +180,12 @@ class GraphStructure():
         for j in a:
             sum += j[2]['weight']
         self.property[i].append(sum)
-        self.X[f'sum_{count_nodes}'] = sum
+
+        if lable2 not in self.X.columns:
+            self.X[lable2] = np.zeros(72)
+        self.X[lable2][i] = sum
+                
+
 
         # Длина самого короткого пути от первой до последней вершины в графе
         dfs = list(nx.dfs_preorder_nodes(G))
@@ -174,7 +197,10 @@ class GraphStructure():
         if path == 20:
             path = 0
         self.property[i].append(path)
-        self.X[f'short_{path}'] = path
+
+        if lable3 not in self.X.columns:
+            self.X[lable3] = np.zeros(72)
+        self.X[lable3][i] = path
 
         # Longest path (critical)
         # self.property.append(self.longest_path(G))
@@ -310,22 +336,28 @@ def error(y, y_oz):
 
 def main_graph():
     structure = GraphStructure()
-    structure.calculate_main_values('BioProject/Bio/graph_value.csv')
+    structure.calculate_main_values('D:\Diplom\BioProject\Bio\graph_value.csv')
     structure.property_kol = 40
     X, Y = structure.full_graph_calc() #1
-
-    print(structure.X.columns)
+    X = structure.X
+    write_x(X.values)
+    X = X.loc[:, (X != 0).any(axis=0)]
+    write_x(X.values)
+    X = X.values
+    c = structure.X.columns
+    for column in c:
+        print(column)
     # X = uniq(X)
-    write_x(structure.X.values, file='pre_x.txt')
-    # print(LA.det(np.dot(X.T, X)))
-    # X = centr_norm(X)
-    # ones = np.ones(len(structure.Graphs_full))
-    # X = np.hstack((X, np.atleast_2d(ones).T))
-    # write_x(structure.X)
+    # write_x(structure.X.values, file='pre_x.txt')
+    print(LA.det(np.dot(X.T, X)))
+    X = centr_norm(X)
+    ones = np.ones(len(structure.Graphs_full))
+    X = np.hstack((X, np.atleast_2d(ones).T))
+    write_x(X)
 
     # X = np.linalg.qr(X)[0]
-    # print(LA.det(np.dot(X.T, X)))
-    # ols_prediction(X, Y)
+    print(LA.det(np.dot(X.T, X)))
+    ols_prediction(X, Y)
     # components = [2, 3, 4]
     # # print(LA.eig(np.dot(X.T, X)))
     # for k in components:

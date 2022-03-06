@@ -1,28 +1,15 @@
 import csv
-from ctypes import util
-import re
-from networkx.algorithms.isomorphism import isomorph
-from networkx.algorithms.shortest_paths import weighted
-from networkx.classes.function import degree
-from networkx.generators.trees import prefix_tree
-from networkx.readwrite.edgelist import write_edgelist
 import numpy as np
-from methods.utils import Utils as ls_ut
 import random
-import copy
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
-from scipy import stats
 import statsmodels.api as sm
 from sklearn.cross_decomposition import PLSRegression
 from methods.PLS1 import PLS1Regression
 from sklearn.metrics import r2_score
-from scipy.stats import ttest_rel
 import numpy.linalg as LA
-from itertools import groupby
-from networkx.algorithms import approximation as approx
 
 components = [5]
 df = pd.DataFrame()
@@ -62,6 +49,7 @@ class GraphStructure():
         self.property = [0] * 72
         for i in range(72):
             self.property[i] = [0] * 1
+        self.X = pd.DataFrame()
     
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
@@ -156,10 +144,13 @@ class GraphStructure():
         return par[0]
 
     def calculate_prop(self, G, i):
+        count_nodes = len(G.nodes)
+
         # Определитель матрицы смежности с весами
         adj = nx.adjacency_matrix(G)
         det_adj = LA.det(adj.todense())
         self.property[i].append(det_adj)
+        self.X[f'det_{count_nodes}'] = det_adj
 
         # Определитель матрицы Лапласа L=D-A
         # l = nx.laplacian_matrix(G)
@@ -171,6 +162,7 @@ class GraphStructure():
         for j in a:
             sum += j[2]['weight']
         self.property[i].append(sum)
+        self.X[f'sum_{count_nodes}'] = sum
 
         # Длина самого короткого пути от первой до последней вершины в графе
         dfs = list(nx.dfs_preorder_nodes(G))
@@ -182,6 +174,7 @@ class GraphStructure():
         if path == 20:
             path = 0
         self.property[i].append(path)
+        self.X[f'short_{path}'] = path
 
         # Longest path (critical)
         # self.property.append(self.longest_path(G))
@@ -320,17 +313,19 @@ def main_graph():
     structure.calculate_main_values('BioProject/Bio/graph_value.csv')
     structure.property_kol = 40
     X, Y = structure.full_graph_calc() #1
-    X = uniq(X)
-    write_x(X, file='pre_x.txt')
-    print(LA.det(np.dot(X.T, X)))
-    X = centr_norm(X)
-    ones = np.ones(len(structure.Graphs_full))
-    X = np.hstack((X, np.atleast_2d(ones).T))
-    write_x(X)
+
+    print(structure.X.columns)
+    # X = uniq(X)
+    write_x(structure.X.values, file='pre_x.txt')
+    # print(LA.det(np.dot(X.T, X)))
+    # X = centr_norm(X)
+    # ones = np.ones(len(structure.Graphs_full))
+    # X = np.hstack((X, np.atleast_2d(ones).T))
+    # write_x(structure.X)
 
     # X = np.linalg.qr(X)[0]
-    print(LA.det(np.dot(X.T, X)))
-    ols_prediction(X, Y)
+    # print(LA.det(np.dot(X.T, X)))
+    # ols_prediction(X, Y)
     # components = [2, 3, 4]
     # # print(LA.eig(np.dot(X.T, X)))
     # for k in components:

@@ -78,7 +78,8 @@ class GraphStructure():
             self.Graphs_full.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
         for i in range(n):
             self.Graphs_full[i] = self.uniq_subgraphs(self.Graphs_full[i])
-        # draw_graph(self.Graphs_full[0][0])
+        # for i in range(len(self.Graphs_full[0])):
+            # draw_graph(self.Graphs_full[0][i])
 
     def uniq_subgraphs(self, G):
         exsisting_subgraph = []
@@ -144,18 +145,22 @@ class GraphStructure():
         return par[0]
 
     def calculate_prop(self, G, i):
+        name = ''
+        nodes = G.nodes
+        for n in nodes:
+            name += f'_{n}'
         count_nodes = len(G.nodes)
         columns = self.X.columns
 
-        lable1 = f'det_{count_nodes}'
+        lable1 = f'det{name}'
         while lable1 in columns and self.X[lable1][i] != 0:
             lable1 = lable1 + '_an'
 
-        lable2 = f'sum_{count_nodes}'
+        lable2 = f'sum{name}'
         while lable2 in columns and self.X[lable2][i] != 0:
             lable2 += '_an'
 
-        lable3 = f'short_{count_nodes}'
+        lable3 = f'short{name}'
         while lable3 in columns and self.X[lable3][i] != 0:
             lable3 += '_an'
 
@@ -175,32 +180,32 @@ class GraphStructure():
         # property.append(LA.det(l.todense()))
 
         # Сумма всех путей в графе
-        sum = 0
-        a = list(G.edges(data=True))
-        for j in a:
-            sum += j[2]['weight']
-        self.property[i].append(sum)
+        # sum = 0
+        # a = list(G.edges(data=True))
+        # for j in a:
+        #     sum += j[2]['weight']
+        # self.property[i].append(sum)
 
-        if lable2 not in self.X.columns:
-            self.X[lable2] = np.zeros(72)
-        self.X[lable2][i] = sum
+        # if lable2 not in self.X.columns:
+        #     self.X[lable2] = np.zeros(72)
+        # self.X[lable2][i] = sum
                 
 
 
         # Длина самого короткого пути от первой до последней вершины в графе
-        dfs = list(nx.dfs_preorder_nodes(G))
-        path = 20
-        for d in dfs:
-            short = self.shortest_path(G, dfs[0], d)
-            if short < path and short != 0:
-                path = short
-        if path == 20:
-            path = 0
-        self.property[i].append(path)
+        # dfs = list(nx.dfs_preorder_nodes(G))
+        # path = 20
+        # for d in dfs:
+        #     short = self.shortest_path(G, dfs[0], d)
+        #     if short < path and short != 0:
+        #         path = short
+        # if path == 20:
+        #     path = 0
+        # self.property[i].append(path)
 
-        if lable3 not in self.X.columns:
-            self.X[lable3] = np.zeros(72)
-        self.X[lable3][i] = path
+        # if lable3 not in self.X.columns:
+        #     self.X[lable3] = np.zeros(72)
+        # self.X[lable3][i] = path
 
         # Longest path (critical)
         # self.property.append(self.longest_path(G))
@@ -241,26 +246,33 @@ def analysis_pVal(est, X, Y):
     max = 0
     pVals = est.pvalues
     delete_index = 0
+    delete_column = 0
+    columns = X.columns
     while True:
+        
         for i in range(len(pVals)):
             if pVals[i] > max:
                 max = pVals[i]
                 delete_index = i
+                delete_column = columns[i]
         if pVals[delete_index] > sigLevel:
             print(pVals[delete_index])
-            print(delete_index+1)
-            X = np.delete(X, [delete_index], axis=1)
-            est = sm.OLS(Y, X).fit()
-            y_oz = est.predict(X)
+            print(delete_column)
+            X = X.drop(delete_column, axis=1)
+            est = sm.OLS(Y, X.values).fit()
+            y_oz = est.predict(X.values)
             print(est.summary())
             pVals = est.pvalues
+            columns = X.columns
+            for column in columns:
+                print(column)
             max = 0
 
 
 
 def ols_prediction(X,Y):
-    est = sm.OLS(Y, X).fit()
-    y_oz = est.predict(X)
+    est = sm.OLS(Y, X.values).fit()
+    y_oz = est.predict(X.values)
     print(est.summary())
     analysis_pVal(est, X, Y)
     return y_oz
@@ -299,11 +311,11 @@ def centr(X):
     return m
 
 def centr_norm(X):
-    m = centr(X)
-    sd = norm_X(X)
-    for i in range(len(X)):
-        for j in range(len(X[0])):
-            X[i][j] = (X[i][j] - m[j])/ sd[j]
+    m = centr(X.values)
+    sd = norm_X(X.values)
+    for i in range(len(X.values)):
+        for j in range(len(X.values[0])):
+            X.values[i][j] = (X.values[i][j] - m[j])/ sd[j]
     return X
 
 
@@ -338,27 +350,34 @@ def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('D:\Diplom\BioProject\Bio\graph_value.csv')
     structure.property_kol = 40
-    X, Y = structure.full_graph_calc() #1
+    F, Y = structure.full_graph_calc() #1
+
     X = structure.X
-    write_x(X.values)
+
     X = X.loc[:, (X != 0).any(axis=0)]
+    X = X.T.drop_duplicates().T
+
     write_x(X.values)
-    X = X.values
-    c = structure.X.columns
+    c = X.columns
     for column in c:
         print(column)
+
     # X = uniq(X)
+    write_x(X.values, 'pre_x.txt')
     # write_x(structure.X.values, file='pre_x.txt')
-    print(LA.det(np.dot(X.T, X)))
+    print(LA.det(np.dot(X.values.T, X.values)))
     X = centr_norm(X)
     ones = np.ones(len(structure.Graphs_full))
-    X = np.hstack((X, np.atleast_2d(ones).T))
-    write_x(X)
+    X['const'] = ones
+    # X = np.hstack((X.values, np.atleast_2d(ones).T))
+    write_x(X.values)
 
     # X = np.linalg.qr(X)[0]
-    print(LA.det(np.dot(X.T, X)))
+    print(LA.det(np.dot(X.values.T, X.values)))
     ols_prediction(X, Y)
-    # components = [2, 3, 4]
+
+
+    components = [4, 8, 20]
     # # print(LA.eig(np.dot(X.T, X)))
     # for k in components:
     #     y_oz, R = pls_prediction(X, Y, k)
@@ -368,5 +387,5 @@ def main_graph():
     # cv = cross_validation(X, Y)
     # utils.CreateTwoPlot(Y, cv)
     # print(error(Y, cv))
-
+ 
 main_graph()

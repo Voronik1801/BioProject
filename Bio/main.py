@@ -10,6 +10,8 @@ from sklearn.cross_decomposition import PLSRegression
 from methods.PLS1 import PLS1Regression
 from sklearn.metrics import r2_score
 import numpy.linalg as LA
+import networkx.algorithms.community as nx_comm
+from networkx.algorithms import approximation
 
 components = [5]
 df = pd.DataFrame()
@@ -164,16 +166,36 @@ class GraphStructure():
         while lable3 in columns and self.X[lable3][i] != 0:
             lable3 += '_an'
 
+        lable4 = f'modularity{name}'
+        while lable4 in columns and self.X[lable4][i] != 0:
+            lable4 += '_an'
+        
+        lable5 = f'cluster{name}'
+        while lable5 in columns and self.X[lable5][i] != 0:
+            lable5 += '_an'
 
+        # Кластеризация
+        cluster = approximation.average_clustering(G, trials=1000, seed=10)
+        if lable5 not in self.X.columns:
+            self.X[lable5] = np.zeros(72)
+        self.X[lable5][i] = cluster
+
+
+
+        # Модулярность
+        # modularity = nx_comm.modularity(G, nx_comm.label_propagation_communities(G))
+        # if lable4 not in self.X.columns:
+        #     self.X[lable4] = np.zeros(72)
+        # self.X[lable4][i] = modularity
 
 
         # Определитель матрицы смежности с весами
-        adj = nx.adjacency_matrix(G)
-        det_adj = LA.det(adj.todense())
-        self.property[i].append(det_adj)
-        if lable1 not in self.X.columns:
-            self.X[lable1] = np.zeros(72)
-        self.X[lable1][i] = det_adj
+        # adj = nx.adjacency_matrix(G)
+        # det_adj = LA.det(adj.todense())
+        # self.property[i].append(det_adj)
+        # if lable1 not in self.X.columns:
+        #     self.X[lable1] = np.zeros(72)
+        # self.X[lable1][i] = det_adj
 
         # Определитель матрицы Лапласа L=D-A
         # l = nx.laplacian_matrix(G)
@@ -202,7 +224,6 @@ class GraphStructure():
         # if path == 20:
         #     path = 0
         # self.property[i].append(path)
-
         # if lable3 not in self.X.columns:
         #     self.X[lable3] = np.zeros(72)
         # self.X[lable3][i] = path
@@ -356,6 +377,8 @@ def main_graph():
 
     X = X.loc[:, (X != 0).any(axis=0)]
     X = X.T.drop_duplicates().T
+    # for column in X.columns:
+        # X[column] = X[column].drop_duplicates()
 
     write_x(X.values)
     c = X.columns

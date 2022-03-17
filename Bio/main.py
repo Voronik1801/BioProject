@@ -8,10 +8,10 @@ from sklearn.metrics import r2_score
 import statsmodels.api as sm
 from sklearn.cross_decomposition import PLSRegression
 from methods.PLS1 import PLS1Regression
-from sklearn.metrics import r2_score
 import numpy.linalg as LA
 import networkx.algorithms.community as nx_comm
 from networkx.algorithms import approximation
+from methods.utils import Utils as ls_ut
 
 components = [5]
 df = pd.DataFrame()
@@ -175,18 +175,18 @@ class GraphStructure():
             lable5 += '_an'
 
         # Кластеризация
-        cluster = approximation.average_clustering(G, trials=1000, seed=10)
-        if lable5 not in self.X.columns:
-            self.X[lable5] = np.zeros(72)
-        self.X[lable5][i] = cluster
+        # cluster = approximation.average_clustering(G, trials=1000, seed=10)
+        # if lable5 not in self.X.columns:
+        #     self.X[lable5] = np.zeros(72)
+        # self.X[lable5][i] = cluster
 
 
 
         # Модулярность
-        # modularity = nx_comm.modularity(G, nx_comm.label_propagation_communities(G))
-        # if lable4 not in self.X.columns:
-        #     self.X[lable4] = np.zeros(72)
-        # self.X[lable4][i] = modularity
+        modularity = nx_comm.modularity(G, nx_comm.label_propagation_communities(G))
+        if lable4 not in self.X.columns:
+            self.X[lable4] = np.zeros(72)
+        self.X[lable4][i] = modularity
 
 
         # Определитель матрицы смежности с весами
@@ -202,31 +202,31 @@ class GraphStructure():
         # property.append(LA.det(l.todense()))
 
         # Сумма всех путей в графе
-        # sum = 0
-        # a = list(G.edges(data=True))
-        # for j in a:
-        #     sum += j[2]['weight']
-        # self.property[i].append(sum)
+        sum = 0
+        a = list(G.edges(data=True))
+        for j in a:
+            sum += j[2]['weight']
+        self.property[i].append(sum)
 
-        # if lable2 not in self.X.columns:
-        #     self.X[lable2] = np.zeros(72)
-        # self.X[lable2][i] = sum
+        if lable2 not in self.X.columns:
+            self.X[lable2] = np.zeros(72)
+        self.X[lable2][i] = sum
                 
 
 
         # Длина самого короткого пути от первой до последней вершины в графе
-        # dfs = list(nx.dfs_preorder_nodes(G))
-        # path = 20
-        # for d in dfs:
-        #     short = self.shortest_path(G, dfs[0], d)
-        #     if short < path and short != 0:
-        #         path = short
-        # if path == 20:
-        #     path = 0
-        # self.property[i].append(path)
-        # if lable3 not in self.X.columns:
-        #     self.X[lable3] = np.zeros(72)
-        # self.X[lable3][i] = path
+        dfs = list(nx.dfs_preorder_nodes(G))
+        path = 20
+        for d in dfs:
+            short = self.shortest_path(G, dfs[0], d)
+            if short < path and short != 0:
+                path = short
+        if path == 20:
+            path = 0
+        self.property[i].append(path)
+        if lable3 not in self.X.columns:
+            self.X[lable3] = np.zeros(72)
+        self.X[lable3][i] = path
 
         # Longest path (critical)
         # self.property.append(self.longest_path(G))
@@ -269,15 +269,14 @@ def analysis_pVal(est, X, Y):
     delete_index = 0
     delete_column = 0
     columns = X.columns
-    while True:
-        
+    while True:   
         for i in range(len(pVals)):
             if pVals[i] > max:
                 max = pVals[i]
                 delete_index = i
                 delete_column = columns[i]
         if pVals[delete_index] > sigLevel:
-            print(pVals[delete_index])
+            # print(pVals[delete_index])
             print(delete_column)
             X = X.drop(delete_column, axis=1)
             est = sm.OLS(Y, X.values).fit()
@@ -285,9 +284,14 @@ def analysis_pVal(est, X, Y):
             print(est.summary())
             pVals = est.pvalues
             columns = X.columns
+            max = 0
+        else:
+            print(LA.det(np.dot(X.values.T, X.values)))
             for column in columns:
                 print(column)
-            max = 0
+            write_x(X.values, "result_for_pls_2.txt")
+            break
+
 
 
 
@@ -361,6 +365,19 @@ def cross_validation(X, Y):
         resultCV[i] = predictYpred
     return resultCV
 
+def cross_validation_pls(X, Y):
+    resultCV = np.zeros(X.shape[0])
+    for i in range(X.shape[0]):
+        beginX = X
+        predictX = X[i]
+        beginY = Y
+        beginX = np.delete(beginX, [i], 0)
+        beginY = np.delete(beginY, [i], 0)
+        regress = PLS1Regression(X, Y, 10, 'classic')
+        predictYpred = regress.Predict(predictX.reshape(1, -1))
+        resultCV[i] = predictYpred
+    return resultCV
+
 def error(y, y_oz):
     dif = (y - y_oz) ** 2
     scal = np.sum(dif)
@@ -373,42 +390,46 @@ def main_graph():
     structure.property_kol = 40
     F, Y = structure.full_graph_calc() #1
 
-    X = structure.X
+    # X = structure.X
 
-    X = X.loc[:, (X != 0).any(axis=0)]
-    X = X.T.drop_duplicates().T
-    # for column in X.columns:
-        # X[column] = X[column].drop_duplicates()
+    # X = X.loc[:, (X != 0).any(axis=0)]
+    # X = X.T.drop_duplicates().T
+    # # for column in X.columns:
+    #     # X[column] = X[column].drop_duplicates()
 
-    write_x(X.values)
-    c = X.columns
-    for column in c:
-        print(column)
+    # write_x(X.values)
+    # c = X.columns
+    # for column in c:
+    #     print(column)
 
-    # X = uniq(X)
-    write_x(X.values, 'pre_x.txt')
-    # write_x(structure.X.values, file='pre_x.txt')
-    print(LA.det(np.dot(X.values.T, X.values)))
-    X = centr_norm(X)
-    ones = np.ones(len(structure.Graphs_full))
-    X['const'] = ones
-    # X = np.hstack((X.values, np.atleast_2d(ones).T))
-    write_x(X.values)
+    # # X = uniq(X)
+    # write_x(X.values, 'pre_x.txt')
+    # # write_x(structure.X.values, file='pre_x.txt')
+    # print(LA.det(np.dot(X.values.T, X.values)))
+    # X = centr_norm(X)
+    # ones = np.ones(len(structure.Graphs_full))
+    # X['const'] = ones
+    # # X = np.hstack((X.values, np.atleast_2d(ones).T))
+    # write_x(X.values)
 
-    # X = np.linalg.qr(X)[0]
-    print(LA.det(np.dot(X.values.T, X.values)))
-    ols_prediction(X, Y)
+    # # X = np.linalg.qr(X)[0]
+    # print(LA.det(np.dot(X.values.T, X.values)))
+    # ols_prediction(X, Y)
 
 
     components = [4, 8, 20]
+    with open('result_for_pls_2.txt') as f:
+        X = np.array([list(map(float, row.split())) for row in f.readlines()])
+
     # # print(LA.eig(np.dot(X.T, X)))
-    # for k in components:
-    #     y_oz, R = pls_prediction(X, Y, k)
-    #     print(R)
-    #     print('---')
-    # utils = ls_ut(X, Y)
+    for k in components:
+        y_oz, R = pls_prediction(X, Y, k)
+        print(R)
+        print('---')
+    utils = ls_ut(X, Y)
     # cv = cross_validation(X, Y)
-    # utils.CreateTwoPlot(Y, cv)
-    # print(error(Y, cv))
+    cv = cross_validation_pls(X, Y)
+    utils.CreateTwoPlot(Y, cv)
+    print(error(Y, cv))
  
 main_graph()

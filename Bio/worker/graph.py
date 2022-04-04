@@ -9,7 +9,6 @@ class GraphStructure():
         self.weights = []
         self.Graphs = []
         self.surv_time = []
-        self.property_kol = 40
         self.X = pd.DataFrame()
     
     def calculate_main_values(self, path):
@@ -26,7 +25,10 @@ class GraphStructure():
         self.donor = [donor[0].split('-')[0] for donor in donor_akceptor.values]
         self.akceptor = [akceptor[0].split('-')[1] for akceptor in donor_akceptor.values]
         self.creat_full_value_graph()
-        
+        for i in range(len(self.Graphs)):
+            for k in range(len(self.Graphs[i])):
+                self.calculate_prop(self.Graphs[i][k], i)
+
     def load_values_in_graph(self, donor, akceptor, weights):
         Graph = nx.Graph()
         for i in range (len(donor)):
@@ -115,10 +117,10 @@ class GraphStructure():
 
 
         # Модулярность
-        modularity = nx_comm.modularity(G, nx_comm.label_propagation_communities(G))
-        if lable4 not in self.X.columns:
-            self.X[lable4] = np.zeros(72)
-        self.X[lable4][i] = modularity
+        # modularity = nx_comm.modularity(G, nx_comm.label_propagation_communities(G))
+        # if lable4 not in self.X.columns:
+        #     self.X[lable4] = np.zeros(72)
+        # self.X[lable4][i] = modularity
 
 
         # Определитель матрицы смежности с весами
@@ -138,7 +140,6 @@ class GraphStructure():
         # a = list(G.edges(data=True))
         # for j in a:
         #     sum += j[2]['weight']
-        # self.property[i].append(sum)
 
         # if lable2 not in self.X.columns:
         #     self.X[lable2] = np.zeros(72)
@@ -147,18 +148,14 @@ class GraphStructure():
 
 
         # Длина самого короткого пути от первой до последней вершины в графе
-        # dfs = list(nx.dfs_preorder_nodes(G))
-        # path = 20
-        # for d in dfs:
-        #     short = self.shortest_path(G, dfs[0], d)
-        #     if short < path and short != 0:
-        #         path = short
-        # if path == 20:
-        #     path = 0
-        # self.property[i].append(path)
-        # if lable3 not in self.X.columns:
-        #     self.X[lable3] = np.zeros(72)
-        # self.X[lable3][i] = path
-
-        # Longest path (critical)
-        # self.property.append(self.longest_path(G))
+        dfs = list(nx.dfs_preorder_nodes(G))
+        path = 20
+        for d in dfs:
+            short = self.shortest_path(G, dfs[0], d)
+            if short < path and short != 0:
+                path = short
+        if path == 20:
+            path = 0
+        if lable3 not in self.X.columns:
+            self.X[lable3] = np.zeros(72)
+        self.X[lable3][i] = path

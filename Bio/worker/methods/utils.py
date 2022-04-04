@@ -90,7 +90,7 @@ class Utils():
         fig, ax = plt.subplots()
         ax.set_title("Предсказания времени дожития пациентов с БАС")
         ax.plot(x, data1, label='Исходные данные')
-        ax.plot(x, data2, label='Оценка')
+        ax.plot(x, data2, label='CV')
         ax.set_ylabel("Время дожития, (лет)")
         ax.set_xlabel("Номер пациента")
         ax.legend()

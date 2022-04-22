@@ -49,7 +49,7 @@ def pls_prediction_lib(X, Y, comp):
     return y_oz, R
 
 def analysis_pVal(est, X, Y):
-    sigLevel = 0.05
+    sigLevel = 0.1
     max = 0
     pVals = est.pvalues
     delete_index = 0
@@ -71,11 +71,11 @@ def analysis_pVal(est, X, Y):
             pVals = est.pvalues
             columns = X.columns
             max = 0
+            for column in columns:
+                print(column)
         else:
             print(f"det: {LA.det(np.dot(X.values.T, X.values))}")
-            # for column in columns:
-                # print(column)
-            write_x(X.values, columns, "final.csv")
+            # write_x(X.values, columns, "final_ols.csv")
             break
 
 def ols_prediction(X,Y):
@@ -83,6 +83,12 @@ def ols_prediction(X,Y):
     y_oz = est.predict(X.values)
     print(est.summary())
     analysis_pVal(est, X, Y)
+    return y_oz
+
+def rlm_prediction(X,Y):
+    est = sm.RLM(Y, X.values, M=sm.robust.norms.HuberT()).fit()
+    y_oz = est.predict(X.values)
+    print(est.summary())
     return y_oz
 
 def pls_prediction(X, Y, comp, method='classic'):
@@ -136,7 +142,7 @@ def uniq(X):
     write_x(X)
     return X
 
-def cross_validation(X, Y):
+def cross_validation_ols(X, Y):
     resultCV = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
         beginX = X
@@ -149,6 +155,19 @@ def cross_validation(X, Y):
         resultCV[i] = predictYpred
     return resultCV
 
+def cross_validation_rlm(X, Y):
+    resultCV = np.zeros(X.shape[0])
+    for i in range(X.shape[0]):
+        beginX = X
+        predictX = X[i]
+        beginY = Y
+        beginX = np.delete(beginX, [i], 0)
+        beginY = np.delete(beginY, [i], 0)
+        est = sm.RLM(Y, X, M=sm.robust.norms.HuberT()).fit()
+        predictYpred = est.predict(predictX.reshape(1, -1))
+        resultCV[i] = predictYpred
+    return resultCV
+
 def cross_validation_pls(X, Y):
     resultCV = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
@@ -157,8 +176,24 @@ def cross_validation_pls(X, Y):
         beginY = Y
         beginX = np.delete(beginX, [i], 0)
         beginY = np.delete(beginY, [i], 0)
-        regress = PLS1Regression(X, Y, 10, 'classic')
+        regress = PLS1Regression(beginX, beginY, 10, 'classic')
         predictYpred = regress.Predict(predictX.reshape(1, -1))
+        resultCV[i] = predictYpred
+    return resultCV
+
+from sklearn.ensemble import RandomForestRegressor
+
+def cross_validation_forest(X, Y):
+    resultCV = np.zeros(X.shape[0])
+    for i in range(X.shape[0]):
+        beginX = X
+        predictX = X[i]
+        beginY = Y
+        beginX = np.delete(beginX, [i], 0)
+        beginY = np.delete(beginY, [i], 0)
+        m = RandomForestRegressor()
+        m.fit(beginX, beginY)
+        predictYpred = m.predict(predictX.reshape(1, -1))
         resultCV[i] = predictYpred
     return resultCV
 

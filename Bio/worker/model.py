@@ -1,4 +1,5 @@
 import csv
+from unittest import result
 import numpy as np
 import random
 import pandas as pd
@@ -23,15 +24,7 @@ def random_value():
     return value
 
 
-def draw_graph(G):
-    options = {
-        'node_color': 'blue',
-        'node_size': 15,
-        'width': 0.5,
-    }
-    # nx.draw(G, cmap = plt.get_cmap('jet'),node_color='red',with_lables=True) 
-    nx.draw(G, **options) 
-    plt.show()
+
 
 
 def error(Y ,y_oz):
@@ -49,7 +42,7 @@ def pls_prediction_lib(X, Y, comp):
     return y_oz, R
 
 def analysis_pVal(est, X, Y):
-    sigLevel = 0.1
+    sigLevel = 0.05
     max = 0
     pVals = est.pvalues
     delete_index = 0
@@ -142,6 +135,14 @@ def uniq(X):
     write_x(X)
     return X
 
+def uniq(X, pred):
+    X = np.unique(X, axis=1)
+    b = X == X[0,:]
+    c = b.all(axis=0)
+    X = X[:,~c]
+    pred = pred[:, ~c]
+    return X, pred
+
 def cross_validation_ols(X, Y):
     resultCV = np.zeros(X.shape[0])
     for i in range(X.shape[0]):
@@ -149,11 +150,71 @@ def cross_validation_ols(X, Y):
         predictX = X[i]
         beginY = Y
         beginX = np.delete(beginX, [i], 0)
+        # beginX, predictX = uniq(beginX, predictX)
         beginY = np.delete(beginY, [i], 0)
-        est = sm.OLS(Y, X).fit()
+        est = sm.OLS(beginY, beginX).fit()
         predictYpred = est.predict(predictX.reshape(1, -1))
         resultCV[i] = predictYpred
     return resultCV
+
+def cross_validation_ols_n(X, Y, n=9):
+    resultCV = np.zeros(X.shape[0])
+    i = 0
+    k = 0
+    j = 0
+    while True:
+        if i >= X.shape[0]:
+            break
+        i += n
+        X_test = X[k:i]
+        Y_test = Y[k:i]
+        X_train = X
+        Y_train = Y
+        for _ in range(n-1):
+            X_train = np.delete(X_train, [j], 0)
+            Y_train = np.delete(Y_train, [j], 0)
+        est = sm.OLS(Y_train, X_train).fit()
+        predictYpred = est.predict(X_test)
+        f = 0
+        while j < i:
+            resultCV[j] = predictYpred[f]
+            j += 1
+            k += 1
+            f += 1
+        if resultCV[71] != 0:
+            break
+        
+    return resultCV
+
+def cross_validation_rlm_n(X, Y, n=9):
+    resultCV = np.zeros(X.shape[0])
+    i = 0
+    k = 0
+    j = 0
+    while True:
+        if i >= X.shape[0]:
+            break
+        i += n
+        X_test = X[k:i]
+        Y_test = Y[k:i]
+        X_train = X
+        Y_train = Y
+        for _ in range(n-1):
+            X_train = np.delete(X_train, [j], 0)
+            Y_train = np.delete(Y_train, [j], 0)
+        est = sm.RLM(Y_train, X_train, M=sm.robust.norms.HuberT()).fit()
+        predictYpred = est.predict(X_test)
+        f = 0
+        while j < i:
+            resultCV[j] = predictYpred[f]
+            j += 1
+            k += 1
+            f += 1
+        if resultCV[71] != 0:
+            break
+        
+    return resultCV
+
 
 def cross_validation_rlm(X, Y):
     resultCV = np.zeros(X.shape[0])
@@ -163,7 +224,8 @@ def cross_validation_rlm(X, Y):
         beginY = Y
         beginX = np.delete(beginX, [i], 0)
         beginY = np.delete(beginY, [i], 0)
-        est = sm.RLM(Y, X, M=sm.robust.norms.HuberT()).fit()
+        # beginX, predictX = uniq(beginX, predictX)
+        est = sm.RLM(beginY, beginX, M=sm.robust.norms.HuberT()).fit()
         predictYpred = est.predict(predictX.reshape(1, -1))
         resultCV[i] = predictYpred
     return resultCV
@@ -198,6 +260,8 @@ def cross_validation_forest(X, Y):
     return resultCV
 
 def error(y, y_oz):
+    y = np.array(y)
+    y_oz = np.array(y_oz)
     dif = (y - y_oz) ** 2
     scal = np.sum(dif)
     err = np.sqrt(scal) / 72

@@ -16,27 +16,28 @@ import scipy
 import scipy.linalg
 from graph import GraphStructure
 import model
+from sklearn.metrics import mean_squared_error
 
 def main_graph():
     structure = GraphStructure()
     structure.calculate_main_values('D:\Diplom\BioProject\Bio\graph_value.csv')
     model.write_y(structure.surv_time, 'result_y.txt')
 
-    X = structure.X
-    X = X.loc[:, (X != 0).any(axis=0)]
+    # X = structure.X
+    # X = X.loc[:, (X != 0).any(axis=0)]
 
-    c = X.columns
-    for column in c:
-        print(column)
-    model.write_x(X.values, X.columns, 'estr.csv')
+    # c = X.columns
+    # for column in c:
+    #     print(column)
+    # model.write_x(X.values, X.columns, 'estr.csv')
 
-    print(f"det: {LA.det(np.dot(X.values.T, X.values))}")
-    X = model.centr_norm(X)
-    ones = np.ones(len(structure.Graphs))
-    X["const"] = ones
-    print(f"det: {LA.det(np.dot(X.values.T, X.values))}")
+    # print(f"det: {LA.det(np.dot(X.values.T, X.values))}")
+    # X = model.centr_norm(X)
+    # ones = np.ones(len(structure.Graphs))
+    # X["const"] = ones
+    # print(f"det: {LA.det(np.dot(X.values.T, X.values))}")
 
-    model.ols_prediction(X, structure.surv_time)
+    # model.ols_prediction(X, structure.surv_time)
 
 
     # components = [4, 8, 20]
@@ -51,7 +52,7 @@ def main_graph():
     # utils.CreateTwoPlot(Y, cv)
     # print(error(Y, cv))
  
-# main_graph()
+main_graph()
 
 def main_input():
     df = pd.DataFrame()
@@ -131,19 +132,23 @@ def main_input():
 
 def final_model():
     df = pd.DataFrame()
-    df = pd.read_csv('final_ols.csv', sep='\t')
-    # df = pd.read_csv('final_ols_515.csv', sep='\t')
+    # df = pd.read_csv('final_ols.csv', sep='\t')
+    df = pd.read_csv('final_ols_515.csv', sep='\t')
 
     with open('data_for_ols/result_y.txt') as f:
         y = np.array([list(map(float, row.split())) for row in f.readlines()])
 
-    # model.rlm_prediction(df, y)
+    y_predicted = model.rlm_prediction(df, y)
     # cv = model.cross_validation_rlm(df.values, y)
 
-    model.ols_prediction(df, y)
-    cv = model.cross_validation_ols(df.values, y)
+    # y_predicted = model.ols_prediction(df, y)
+    # print(y_predicted)
+    # cv = model.cross_validation_ols_n(df.values, y, n=6)
+    # cv = model.cross_validation_rlm_n(df.values, y, n=6)
     utils = ls_ut(df.values, y)
-    utils.CreateTwoPlot(data1=y, data2=cv)
-    print(model.error(y, cv))
+    # utils.CreateTwoPlot(data1=y, data2=cv)
+    rms = mean_squared_error(y, y_predicted, squared=False)
+    # print(model.error(y, cv))
+    print(f'rmse: {rms}')
 
-final_model()
+# final_model()

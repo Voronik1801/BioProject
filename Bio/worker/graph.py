@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import networkx.algorithms.community as nx_comm
+import matplotlib.pyplot as plt
 
 class GraphStructure():
     def __init__(self):
@@ -10,7 +11,34 @@ class GraphStructure():
         self.Graphs = []
         self.surv_time = []
         self.X = pd.DataFrame()
+        self.list_nodes = ['101.A@OD1', '79.A@NH2', '101.A@OD2', '79.A@NH1', '81.A@O', '74.A@O', '83.A@O',
+                            '124.B@OD1', '46.B@NE2', '71.B@NE2', '124.B@OD2', '126.B@N',
+                            '54.B@OG1', '52.B@OD1', '52.B@OD2', '54.B@N',
+                            '126.A@N', '124.A@OD2', '124.A@OD1', '71.A@NE2', '46.A@NE2',
+                            '46.B@NH2', '124.B@OD2', '124.B@OD1', '71.B@NE2', '126.B@N',
+                            '125.B@OD2', '71.B@NE2', '124.B@OD1', '126.B@N', '124.B@OD2', '46.B@NE2',
+                            '124.B@OD1', '46.B@NE2', '71.B@NE2', '126.B@N', '124.B@OD2',
+                            '79.A@NE', '80.A@O', '83.A@N']
     
+    def draw_graph(self, G):
+        color_map = []
+        for node in G:
+            if node in self.list_nodes:
+                color_map.append('red')
+            else: 
+                color_map.append('blue')      
+        # options = {
+        #     'node_color': color_map,
+        #     'node_size': 15,
+        #     'width': 0.5,
+        #     'with_lables':True
+        # }
+        # nx.draw(G, **options) 
+        nx.draw(G, node_color=color_map, with_labels=True, width= 1,node_size = 50, font_size=7)
+        # nx.draw(G, cmap = plt.get_cmap('jet'),node_color='red') 
+        plt.show()
+        # plt.show()
+
     def calculate_main_values(self, path):
         with open(path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
@@ -40,6 +68,7 @@ class GraphStructure():
         n = len(self.weights)
         for i in range(n):
             self.Graphs.append(self.load_values_in_graph(self.donor, self.akceptor, self.weights[i]))
+            self.draw_graph(self.Graphs[i])
         for i in range(n):
             self.Graphs[i] = self.uniq_subgraphs(self.Graphs[i])
 
@@ -108,10 +137,10 @@ class GraphStructure():
         while lable5 in columns and self.X[lable5][i] != 0:
             lable5 += '_an'
 
-        modularity = nx.sigma(G)
-        if lable1 not in self.X.columns:
-            self.X[lable1] = np.zeros(72)
-        self.X[lable1][i] = modularity
+        # modularity = nx.sigma(G)
+        # if lable1 not in self.X.columns:
+        #     self.X[lable1] = np.zeros(72)
+        # self.X[lable1][i] = modularity
 
 
         # p = []
@@ -130,10 +159,10 @@ class GraphStructure():
 
 
         # Модулярность
-        # modularity = nx_comm.modularity(G, nx_comm.label_propagation_communities(G))
-        # if lable4 not in self.X.columns:
-        #     self.X[lable4] = np.zeros(72)
-        # self.X[lable4][i] = modularity
+        modularity = nx_comm.modularity(G, nx_comm.label_propagation_communities(G))
+        if lable4 not in self.X.columns:
+            self.X[lable4] = np.zeros(72)
+        self.X[lable4][i] = modularity
 
 
         # Сумма всех путей в графе

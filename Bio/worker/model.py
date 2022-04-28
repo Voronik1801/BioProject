@@ -84,6 +84,14 @@ def rlm_prediction(X,Y):
     print(est.summary())
     return y_oz
 
+def forest_prediction(X,Y):
+    m = RandomForestRegressor()
+    m.fit(X, Y)
+    y_oz = m.predict(X)
+    f = m.score(X, Y)
+    return y_oz
+
+
 def pls_prediction(X, Y, comp, method='classic'):
     regress = PLS1Regression(X, Y, comp, method)
     y_oz = regress.Predict(X)
@@ -212,7 +220,35 @@ def cross_validation_rlm_n(X, Y, n=9):
             f += 1
         if resultCV[71] != 0:
             break
-        
+    return resultCV
+
+def cross_validation_forest_n(X, Y, n=9):
+    resultCV = np.zeros(X.shape[0])
+    i = 0
+    k = 0
+    j = 0
+    while True:
+        if i >= X.shape[0]:
+            break
+        i += n
+        X_test = X[k:i]
+        Y_test = Y[k:i]
+        X_train = X
+        Y_train = Y
+        for _ in range(n-1):
+            X_train = np.delete(X_train, [j], 0)
+            Y_train = np.delete(Y_train, [j], 0)
+        m = RandomForestRegressor()
+        m.fit(X_train, Y_train)
+        predictYpred = m.predict(X_test)
+        f = 0
+        while j < i:
+            resultCV[j] = predictYpred[f]
+            j += 1
+            k += 1
+            f += 1
+        if resultCV[71] != 0:
+            break
     return resultCV
 
 

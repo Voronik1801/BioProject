@@ -52,7 +52,7 @@ def main_graph():
     # utils.CreateTwoPlot(Y, cv)
     # print(error(Y, cv))
  
-main_graph()
+# main_graph()
 
 def main_input():
     df = pd.DataFrame()
@@ -138,17 +138,19 @@ def final_model():
     with open('data_for_ols/result_y.txt') as f:
         y = np.array([list(map(float, row.split())) for row in f.readlines()])
 
-    y_predicted = model.rlm_prediction(df, y)
+    # y_predicted = model.rlm_prediction(df, y)
     # cv = model.cross_validation_rlm(df.values, y)
 
     # y_predicted = model.ols_prediction(df, y)
     # print(y_predicted)
     # cv = model.cross_validation_ols_n(df.values, y, n=6)
     # cv = model.cross_validation_rlm_n(df.values, y, n=6)
+    y_predicted = model.forest_prediction(df.values, y)
+    # cv = model.cross_validation_forest(df.values, y)
     utils = ls_ut(df.values, y)
     # utils.CreateTwoPlot(data1=y, data2=cv)
     rms = mean_squared_error(y, y_predicted, squared=False)
     # print(model.error(y, cv))
     print(f'rmse: {rms}')
 
-# final_model()
+final_model()

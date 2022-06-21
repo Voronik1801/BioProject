@@ -129,16 +129,16 @@ class Utils():
             err[k] = np.sqrt(scal) / 72
         return err
 
-    # def PrintErrorCVRobust(self, X, Y):
-    #     # Print err
-    #     for k in components:
-    #         CV = self.CrossValidationRobust(k)
-    #         err = np.zeros(X.shape[0])
-    #         scal = 0
-    #         for j in range(0, len(Y)):
-    #             err[j] = (CV[j] - Y[j]) ** 2
-    #             scal += err[j]
-    #         print(np.sqrt(scal)/72, "\t")
+    def PrintErrorCVRobust(self, X, Y):
+        # Print err
+        for k in components:
+            CV = self.CrossValidationRobust(k)
+            err = np.zeros(X.shape[0])
+            scal = 0
+            for j in range(0, len(Y)):
+                err[j] = (CV[j] - Y[j]) ** 2
+                scal += err[j]
+            print(np.sqrt(scal)/72, "\t")
 
     def ErrorCVRobust(self, X, Y):
         # Print err

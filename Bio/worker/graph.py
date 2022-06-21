@@ -117,10 +117,6 @@ class GraphStructure():
         count_nodes = len(G.nodes)
         columns = self.X.columns
 
-        lable1 = f'estr{name}'
-        while lable1 in columns and self.X[lable1][i] != 0:
-            lable1 = lable1 + '_an'
-
         lable2 = f'sum{name}'
         while lable2 in columns and self.X[lable2][i] != 0:
             lable2 += '_an'
@@ -132,31 +128,6 @@ class GraphStructure():
         lable4 = f'modularity{name}'
         while lable4 in columns and self.X[lable4][i] != 0:
             lable4 += '_an'
-        
-        lable5 = f'cluster{name}'
-        while lable5 in columns and self.X[lable5][i] != 0:
-            lable5 += '_an'
-
-        # modularity = nx.sigma(G)
-        # if lable1 not in self.X.columns:
-        #     self.X[lable1] = np.zeros(72)
-        # self.X[lable1][i] = modularity
-
-
-        # p = []
-        # v = nx.communicability_exp(G)
-        # for n in G.nodes:
-        #     for k in v[n]:
-        #         el = v[n][k]
-        #         if(el != 0):
-        #             p.append(el)
-        # sum = 0
-        # for r in p:
-        #     sum += r
-        # if lable1 not in self.X.columns:
-        #     self.X[lable1] = np.zeros(72)
-        # self.X[lable1][i] = sum
-
 
         # Модулярность
         modularity = nx_comm.modularity(G, nx_comm.label_propagation_communities(G))
@@ -166,26 +137,24 @@ class GraphStructure():
 
 
         # Сумма всех путей в графе
-        # sum = 0
-        # a = list(G.edges(data=True))
-        # for j in a:
-        #     sum += j[2]['weight']
+        sum = 0
+        a = list(G.edges(data=True))
+        for j in a:
+            sum += j[2]['weight']
 
-        # if lable2 not in self.X.columns:
-        #     self.X[lable2] = np.zeros(72)
-        # self.X[lable2][i] = sum
+        if lable2 not in self.X.columns:
+            self.X[lable2] = np.zeros(72)
+        self.X[lable2][i] = sum
                 
-
-
         # Длина самого короткого пути от первой до последней вершины в графе
-        # dfs = list(nx.dfs_preorder_nodes(G))
-        # path = 20
-        # for d in dfs:
-        #     short = self.shortest_path(G, dfs[0], d)
-        #     if short < path and short != 0:
-        #         path = short
-        # if path == 20:
-        #     path = 0
-        # if lable3 not in self.X.columns:
-        #     self.X[lable3] = np.zeros(72)
-        # self.X[lable3][i] = path
+        dfs = list(nx.dfs_preorder_nodes(G))
+        path = 20
+        for d in dfs:
+            short = self.shortest_path(G, dfs[0], d)
+            if short < path and short != 0:
+                path = short
+        if path == 20:
+            path = 0
+        if lable3 not in self.X.columns:
+            self.X[lable3] = np.zeros(72)
+        self.X[lable3][i] = path

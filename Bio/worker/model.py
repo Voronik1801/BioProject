@@ -17,14 +17,9 @@ import scipy
 import scipy.linalg
 from graph import GraphStructure
 
-
-
 def random_value():
     value = random.randint(0, 71)
     return value
-
-
-
 
 
 def error(Y ,y_oz):
@@ -89,6 +84,9 @@ def forest_prediction(X,Y):
     m.fit(X, Y)
     y_oz = m.predict(X)
     f = m.score(X, Y)
+    param = m.feature_importances_
+    print(f'param: {param}')
+    print(f'R:{f}')
     return y_oz
 
 

@@ -56,11 +56,11 @@ def main_graph():
 
 def main_input():
     df = pd.DataFrame()
-    df_mod = pd.read_csv('data_for_ols/input_mod.csv', sep='\t')
-    df_short = pd.read_csv('data_for_ols/input_short.csv', sep='\t')
-    df_sum = pd.read_csv('data_for_ols/input_sum.csv', sep='\t')
+    df_mod = pd.read_csv('data_for_train/input_mod.csv', sep='\t')
+    df_short = pd.read_csv('data_for_train/input_short.csv', sep='\t')
+    df_sum = pd.read_csv('data_for_train/input_sum.csv', sep='\t')
 
-    with open('data_for_ols/result_y.txt') as f:
+    with open('data_for_train/result_y.txt') as f:
         y = np.array([list(map(float, row.split())) for row in f.readlines()])
     
     # берем за основу т.к R = 0.502
@@ -135,22 +135,45 @@ def final_model():
     # df = pd.read_csv('final_ols.csv', sep='\t')
     df = pd.read_csv('final_ols_515.csv', sep='\t')
 
-    with open('data_for_ols/result_y.txt') as f:
+    with open('data_for_train/result_y.txt') as f:
         y = np.array([list(map(float, row.split())) for row in f.readlines()])
 
-    # y_predicted = model.rlm_prediction(df, y)
-    # cv = model.cross_validation_rlm(df.values, y)
+    n_cv = 9
 
     # y_predicted = model.ols_prediction(df, y)
-    # print(y_predicted)
-    # cv = model.cross_validation_ols_n(df.values, y, n=6)
-    # cv = model.cross_validation_rlm_n(df.values, y, n=6)
-    y_predicted = model.forest_prediction(df.values, y)
-    # cv = model.cross_validation_forest(df.values, y)
-    utils = ls_ut(df.values, y)
-    # utils.CreateTwoPlot(data1=y, data2=cv)
-    rms = mean_squared_error(y, y_predicted, squared=False)
-    # print(model.error(y, cv))
-    print(f'rmse: {rms}')
+    # cv = model.cross_validation_ols_n(df.values, y, n=n_cv)
+    # print('----OLS---')
+    # rms = mean_squared_error(y, y_predicted, squared=False)
+    # rms_cv = mean_squared_error(y, cv, squared=False)
+    # err = model.error(y, cv)
+    # print(f'rmse y_predict: {rms}')
+    # print(f'rmse cv: {rms_cv}')
+    # print(f'err: {err}')
 
+
+    # y_predicted = model.rlm_prediction(df, y)
+    # cv = model.cross_validation_rlm_n(df.values, y, n=n_cv)
+    # print('----RLM---')
+    # rms = mean_squared_error(y, y_predicted, squared=False)
+    # rms_cv = mean_squared_error(y, cv, squared=False)
+    # err = model.error(y, cv)
+    # print(f'rmse y_predict: {rms}')
+    # print(f'rmse cv: {rms_cv}')
+    # print(f'cv: {err}')
+
+
+    y_predicted = model.forest_prediction(df.values, y)
+    cv = model.cross_validation_forest_n(df.values, y, n_cv)
+    print('----RF---')
+    rms = mean_squared_error(y, y_predicted, squared=False)
+    rms_cv = mean_squared_error(y, cv, squared=False)
+    err = model.error(y, cv)
+    print(f'rmse y_predict: {rms}')
+    print(f'rmse cv: {rms_cv}')
+    print(f'err: {err}')
+
+
+    utils = ls_ut(df.values, y)
+    # utils.CreateTwoPlot(data1=y, data2=y_predicted)
+    utils.CreateTwoPlot(data1=y, data2=cv)
 final_model()

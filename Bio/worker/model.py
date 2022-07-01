@@ -6,7 +6,6 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
-import statsmodels.api as sm
 from sklearn.cross_decomposition import PLSRegression
 from methods.PLS1 import PLS1Regression
 import numpy.linalg as LA

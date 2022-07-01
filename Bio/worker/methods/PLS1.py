@@ -170,12 +170,9 @@ class PLS1Regression():
 
         helpPW = np.dot(P.T, W)
         Bpls = np.dot((W.dot(np.linalg.inv(helpPW))), b)
-        # start_time = time.time()
-        # resMinimization = minimize (self.MinimazeFunc, Bpls, method="nelder-mead")
+        resMinimization = minimize (self.MinimazeFunc, Bpls, method="nelder-mead")
         rez = nelder_mead(self.MinimazeFunc, Bpls)
-        # end_time = time.time()
-        # print(end_time - start_time)
-        # self.B = resMinimization.x
+        self.B = resMinimization.x
         self.B = rez[0]
         self.B0 = b[0] - np.dot(P[:, 0].T, self.B)
 

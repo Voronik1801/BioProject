@@ -13,3 +13,5 @@ It is assumed that the course of the disease affects the structure of the graph,
 # Results
 It turned out to isolate significant subgraphs of the SOD1 enzyme, as well as to improve the RMSE twice.
 All the details are [here](https://github.com/Voronik1801/BioProject/blob/master/Prediction%20Survival%20Time.ipynb)
+# Author
+Voronkina Daria - Graduated student at [NSTU](https://www.nstu.ru/)

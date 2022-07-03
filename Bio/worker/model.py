@@ -1,20 +1,10 @@
-import csv
-from unittest import result
 import numpy as np
 import random
-import pandas as pd
-import networkx as nx
-import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 from sklearn.cross_decomposition import PLSRegression
-from methods.PLS1 import PLS1Regression
 import numpy.linalg as LA
-import networkx.algorithms.community as nx_comm
-from networkx.algorithms import approximation
-from methods.utils import Utils as ls_ut
-import scipy
 import scipy.linalg
-from graph import GraphStructure
+import statsmodels.api as sm
 
 def random_value():
     value = random.randint(0, 71)
@@ -35,7 +25,7 @@ def pls_prediction_lib(X, Y, comp):
     R = regression.score(X, Y)
     return y_oz, R
 
-def analysis_pVal(est, X, Y):
+def analysis_pVal(est, X, Y, path_to_save):
     sigLevel = 0.05
     max = 0
     pVals = est.pvalues
@@ -50,7 +40,7 @@ def analysis_pVal(est, X, Y):
                 delete_column = columns[i]
         if pVals[delete_index] > sigLevel:
             # print(pVals[delete_index])
-            print(delete_column)
+            # print(delete_column)
             X = X.drop(delete_column, axis=1)
             est = sm.OLS(Y, X.values).fit()
             y_oz = est.predict(X.values)
@@ -58,18 +48,19 @@ def analysis_pVal(est, X, Y):
             pVals = est.pvalues
             columns = X.columns
             max = 0
-            for column in columns:
-                print(column)
+            # for column in columns:
+                # print(column)
         else:
+            print(est.summary())
             print(f"det: {LA.det(np.dot(X.values.T, X.values))}")
-            # write_x(X.values, columns, "final_ols.csv")
+            write_x(X.values, columns, path_to_save)
             break
 
-def ols_prediction(X,Y):
+def ols_prediction(X,Y, path_to_save):
     est = sm.OLS(Y, X.values).fit()
     y_oz = est.predict(X.values)
-    print(est.summary())
-    analysis_pVal(est, X, Y)
+    # print(est.summary())
+    analysis_pVal(est, X, Y, path_to_save)
     return y_oz
 
 def rlm_prediction(X,Y):
@@ -172,7 +163,6 @@ def cross_validation_ols_n(X, Y, n=9):
             break
         i += n
         X_test = X[k:i]
-        Y_test = Y[k:i]
         X_train = X
         Y_train = Y
         for _ in range(n-1):
@@ -188,7 +178,6 @@ def cross_validation_ols_n(X, Y, n=9):
             f += 1
         if resultCV[71] != 0:
             break
-        
     return resultCV
 
 def cross_validation_rlm_n(X, Y, n=9):
@@ -219,7 +208,7 @@ def cross_validation_rlm_n(X, Y, n=9):
             break
     return resultCV
 
-def cross_validation_forest_n(X, Y, n=9):
+def cross_validation_model_sklearn_n(X, Y, model, n=9):
     resultCV = np.zeros(X.shape[0])
     i = 0
     k = 0
@@ -235,7 +224,7 @@ def cross_validation_forest_n(X, Y, n=9):
         for _ in range(n-1):
             X_train = np.delete(X_train, [j], 0)
             Y_train = np.delete(Y_train, [j], 0)
-        m = RandomForestRegressor()
+        m = model
         m.fit(X_train, Y_train)
         predictYpred = m.predict(X_test)
         f = 0

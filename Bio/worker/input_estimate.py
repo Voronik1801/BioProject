@@ -20,11 +20,11 @@ from sklearn.metrics import mean_squared_error
 
 def main_input():
     df = pd.DataFrame()
-    df_mod = pd.read_csv('data_for_train/input_mod.csv', sep='\t')
-    df_short = pd.read_csv('data_for_train/input_short.csv', sep='\t')
-    df_sum = pd.read_csv('data_for_train/input_sum.csv', sep='\t')
+    df_mod = pd.read_csv('Bio/data_for_train/input_mod.csv', sep='\t')
+    df_short = pd.read_csv('Bio/data_for_train/input_short.csv', sep='\t')
+    df_sum = pd.read_csv('Bio/data_for_train/input_sum.csv', sep='\t')
 
-    with open('data_for_train/result_y.txt') as f:
+    with open('Bio/data_for_train/result_y.txt') as f:
         y = np.array([list(map(float, row.split())) for row in f.readlines()])
     
     # берем за основу т.к R = 0.502
@@ -50,8 +50,8 @@ def main_input():
 
     # model.rlm_prediction(df, y)
     # cv = model.cross_validation_rlm(df.values, y)
-    model.ols_prediction(df, y)
-    cv = model.cross_validation_ols(df.values, y)
+    model.ols_prediction(df, y, 'final_py')
+    cv = model.cross_validation_ols_n(df.values, y)
     utils = ls_ut(df.values, y)
     utils.CreateTwoPlot(data1=y, data2=cv)
     print(model.error(y, cv))

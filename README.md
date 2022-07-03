@@ -9,5 +9,7 @@ This work is graduate work. I've been doing it for two years, the result and pro
 # Input data
 The data contain 182 signs of hydrogen bonds of the enzyme SOD1 for 72 patients.
 # Method
-It is assumed that the course of the disease affects the structure of the graph, therefore, when compiling training samples, the characteristics of the raf are calculated.
+It is assumed that the course of the disease affects the structure of the graph, therefore, when compiling training samples, the characteristics of the raf are calculated. A linear regression is constructed for the constructed training sample.
 # Results
+It turned out to isolate significant subgraphs of the SOD1 enzyme, as well as to improve the RMSE twice.
+All the details are [here](https://github.com/Voronik1801/BioProject/blob/master/Prediction%20Survival%20Time.ipynb)
